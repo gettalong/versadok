@@ -123,7 +123,7 @@ module VersaDok
         level = @scanner.matched_size - 1
         if @stack.block_boundary?
           @stack.append_child(Node.new(:header, properties: {level: level}))
-        elsif @stack.last_child.type == :header && @stack.last_child[:level] != level
+        elsif @stack.last_child.type != :header || @stack.last_child[:level] != level
           @scanner.unscan
         end
       end

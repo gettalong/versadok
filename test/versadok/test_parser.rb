@@ -132,6 +132,11 @@ describe VersaDok::Parser do
       para = parse_single("#header", :paragraph, 1)
       assert_equal("#header", para.children[0][:content])
     end
+
+    it "ignores the marker on a continuation line when not already in a header" do
+      para = parse_single("Para\n# header", :paragraph, 1)
+      assert_equal("Para # header", para.children[0][:content])
+    end
   end
 
   describe "parse_blockquote" do
