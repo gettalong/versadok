@@ -119,6 +119,10 @@ describe VersaDok::Parser do
       assert_equal(:header, elements[4].type)
     end
 
+    it "allows whitespace before the marker" do
+      parse_single("   \t# Test", :header, 1)
+    end
+
     it "parses continuation lines" do
       header = parse_single("# header\ncontin\n  ued\n# here\n## and here", :header, 1)
       assert_equal("header contin ued here ## and here", header.children[0][:content])
@@ -135,6 +139,10 @@ describe VersaDok::Parser do
       bq = parse_single("> Test", :blockquote, 1)
       assert_equal(:paragraph, bq.children[0].type)
       assert_equal("Test", bq.children[0].children[0][:content])
+    end
+
+    it "allows whitespace before the marker" do
+      parse_single("   \t> Test", :blockquote, 1)
     end
 
     it "handles a line with just the marker and nothing else as paragraph" do
