@@ -184,5 +184,9 @@ describe VersaDok::Parser do
       para = parse_single(">Para", :paragraph, 1)
       assert_equal(">Para", para.children[0][:content])
     end
+
+    it "only allows the marker followed by line break during a blockquote, not at the start" do
+      parse_single(">\n> Test", :paragraph, 1)
+    end
   end
 end
