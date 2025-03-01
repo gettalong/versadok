@@ -175,12 +175,12 @@ module VersaDok
       end
 
       @stack.reset_level(-1)
+      add_text(' ') if @stack.last_child&.type == :text
       while !@scanner.eos? && (text = @scanner.scan_until(/(?=\r|\r?\n|\z)/))
         add_text(text)
         case @scanner.peek_byte
         when 10, 13 # \n \r
           @scanner.scan_byte if @scanner.scan_byte == 13 && @scanner.peek_byte == 10
-          add_text(' ')
           break
         end
       end

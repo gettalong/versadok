@@ -255,7 +255,7 @@ describe VersaDok::Parser do
 
     it "handles a line with just the marker and nothing else as paragraph" do
       para = parse_single(">\r>\r\n>\n", :paragraph, 1)
-      assert_equal("> > > ", para.children[0][:content])
+      assert_equal("> > >", para.children[0][:content])
     end
 
     it "parses lines with the marker and nothing else on the line" do
