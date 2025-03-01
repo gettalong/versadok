@@ -3,11 +3,114 @@ require 'versadok/parser'
 
 describe VersaDok::Parser::Stack do
   before do
-    @stack = VersaDok::Parser::Stack.new(node(:root))
+    @stack = VersaDok::Parser::Stack.new(node(:root, properties: {indent: 0}))
   end
 
-  def node(type)
-    VersaDok::Node.new(type)
+  def node(type, **args)
+    VersaDok::Node.new(type, **args)
+  end
+
+  describe "container" do
+    it "returns the current container element" do
+      assert_equal(@stack[0], @stack.container)
+      @stack.append_child(node(:test))
+      assert_equal(:test, @stack.container.type)
+    end
+  end
+
+  describe "block_boundary?" do
+    it "returns true if no child element is at the current level" do
+      assert(@stack.block_boundary?)
+      @stack.append_child(node(:test))
+      @stack.reset_level
+      refute(@stack.block_boundary?)
+    end
+
+    it "returns true if the last appended child element was of type :blank" do
+      @stack.append_child(node(:test))
+      @stack.append_child(node(:blank), container: false)
+      @stack.reset_level
+      assert(@stack.block_boundary?)
+    end
+  end
+
+  describe "last_child" do
+    it "returns the last appended child of the current container" do
+      assert_nil(@stack.last_child)
+      @stack.append_child(node(:test))
+      @stack.reset_level
+      assert_equal(:test, @stack.last_child.type)
+    end
+  end
+
+  describe "[]" do
+    it "returns the node at the given level in the stack" do
+      assert_equal(:root, @stack[0].type)
+      @stack.append_child(node(:test))
+      assert_equal(:test, @stack[1].type)
+    end
+  end
+
+  describe "reset_level" do
+    before do
+      @stack.append_child(node(:level1))
+      @stack.append_child(node(:level2))
+    end
+
+    it "changes the current level to the given one" do
+      @stack.reset_level(0)
+      assert_equal(:root, @stack.container.type)
+      @stack.reset_level(1)
+      assert_equal(:level1, @stack.container.type)
+    end
+
+    it "allows using negative level number to count from the top of the stack" do
+      @stack.reset_level(-2)
+      assert_equal(:level1, @stack.container.type)
+    end
+  end
+
+  describe "enter" do
+    it "moves the current level one step up" do
+      @stack.append_child(node(:level1))
+      @stack.reset_level
+      @stack.enter
+      assert_equal(:level1, @stack.container.type)
+    end
+  end
+
+  describe "enter_indented" do
+    it "changes the current level to the first one with at least the given indentation" do
+      @stack.append_child(node(:list, properties: {indent: 0}))
+      @stack.append_child(node(:list_item1, properties: {indent: 2}))
+      @stack.append_child(node(:list, properties: {indent: 0}))
+      @stack.append_child(node(:list_item2, properties: {indent: 4}))
+
+      @stack.reset_level
+      @stack.enter_indented(2)
+      assert_equal(:list_item1, @stack.container.type)
+
+      @stack.reset_level
+      @stack.enter_indented(5)
+      assert_equal(:list_item2, @stack.container.type)
+    end
+
+    it "stops at elements that have no indent defined" do
+      @stack.append_child(node(:list_item, properties: {indent: 2}))
+      @stack.append_child(node(:test))
+      @stack.append_child(node(:test2))
+      @stack.reset_level
+      @stack.enter_indented(5)
+      assert_equal(:list_item, @stack.container.type)
+    end
+
+    it "stops if no more elements are available" do
+      @stack.append_child(node(:list, properties: {indent: 2}))
+      @stack.append_child(node(:list_item, properties: {indent: 5}))
+      @stack.reset_level
+      @stack.enter_indented(10)
+      assert_equal(:list_item, @stack.container.type)
+    end
   end
 
   describe "append_child" do
