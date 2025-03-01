@@ -35,8 +35,6 @@ module VersaDok
 
     class Stack
 
-      attr_reader :level
-
       def initialize(node)
         @stack = [node]
         @level = 0
@@ -47,7 +45,7 @@ module VersaDok
       end
 
       def block_boundary?
-        @level + 1 == @stack.size || @stack[@level + 1].type == :blank
+        @level + 1 == @stack.size || @stack[-1].children.last&.type == :blank
       end
 
       def last_child
@@ -64,6 +62,14 @@ module VersaDok
 
       def enter
         @level += 1
+      end
+
+      def enter_indented(indent)
+        @temp = @level
+        while @temp < @stack.size && (el_indent = @stack[@temp][:indent]) && el_indent <= indent
+          @level = @temp if el_indent > 0
+          @temp += 1
+        end
       end
 
       def append_child(node, container: true)
@@ -83,7 +89,7 @@ module VersaDok
 
     def initialize
       @scanner = StringScanner.new(''.b)
-      @stack = Stack.new(Node.new(:root))
+      @stack = Stack.new(Node.new(:root, properties: {indent: 0}))
       @line_no = 1
       @blank_at_level = 0
     end
@@ -101,6 +107,8 @@ module VersaDok
       @scanner.scan(/[ \t\v]*/)
       @current_indent = @scanner.matched_size
 
+      @stack.enter_indented(@current_indent) if @current_indent > 0
+
       case @scanner.peek_byte
       when 35 # #
         parse_header
@@ -109,6 +117,7 @@ module VersaDok
       when 13, 10, nil # \r \n EOS
         byte = @scanner.scan_byte
         @scanner.scan_byte if byte == 13 && @scanner.peek_byte == 10
+        @stack.enter_indented(1000)
         unless @stack.last_child&.type == :blank
           @stack.append_child(Node.new(:blank), container: false)
         end
@@ -132,13 +141,13 @@ module VersaDok
 
     def parse_blockquote
       if @scanner.match?("> ")
-        if @stack.block_boundary?
-          @scanner.pos += 2
-          @stack.append_child(Node.new(:blockquote))
-          parse_line
-        elsif @stack.last_child.type == :blockquote
+        if @stack.last_child&.type == :blockquote
           @scanner.pos += 2
           @stack.enter
+          parse_line
+        elsif @stack.block_boundary?
+          @scanner.pos += 2
+          @stack.append_child(Node.new(:blockquote))
           parse_line
         else
           parse_continuation_line
@@ -147,7 +156,10 @@ module VersaDok
         if @stack.last_child&.type == :blockquote
           @scanner.pos += @scanner.matched_size
           @stack.enter
-          @stack.append_child(Node.new(:blank)) unless @stack.last_child.type == :blank
+          @stack.enter_indented(1000)
+          unless @stack.last_child.type == :blank
+            @stack.append_child(Node.new(:blank), container: false)
+          end
         else
           parse_continuation_line
         end
