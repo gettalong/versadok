@@ -1,0 +1,148 @@
+## General
+
+### Line breaks
+
+The following are all recognized as a single line break: CR, LF and CR directly followed by LF.
+
+
+### Whitespace and indentation
+
+The following are the recognized whitespace characters: space, horizontal tab and vertical tab.
+
+Some block elements use indentation for their content. The indentation level is defined by the
+number of whitespace characters. This means a single tab only counts as a single character.
+
+
+## Block Markup
+
+### Paragraph
+
+Any line that does not start one of the other block elements starts a paragraph.
+
+::example:
+  A simple paragraph here.
+
+  >Here a space is missing after '>', and it is
+  therefore also a paragraph.
+
+
+### Header
+
+A line starting with one to six '#' characters followed by at least a single space character defines
+a header. The number of '#' characters defines the header level.
+
+::example:
+  # Header level 1
+
+  ###### Header level 6
+
+Whitespace is allowed before a header:
+
+::example:
+  # This header starts at the left boundary
+
+     ## Header with whitespace before
+
+Hard-wrapping header text works as expected. Continuation lines can use the same header marker as
+the first line:
+
+::example:
+  ### Header 3
+  continued here
+  ### and here
+
+
+### Blockquote
+
+A line starting with a '>' character followed by a single space defines a blockquote. The content of
+a blockquote is block markup.
+
+::example:
+  > This is a blockquote.
+  > Another line.
+  > 
+  > # Header in blockquote
+
+Whitespace is allowed before a blockquote:
+
+::example:
+  This is a paragraph.
+
+    > This is a blockquote with whitespace before.
+
+Hard-wrapping blockquote content works as expected:
+
+::example:
+  > This paragraph in the blockquote
+  continues here.
+  > And here.
+
+As a special case a '>' directly followed by a line break is also considered to be the starting
+character of a blockquote:
+
+::example:
+  > This is a blockquote.
+  >
+  > The line above contains only the '>' character.
+
+
+### List
+
+A line starting with a the list item marker followed by a single space defines a list item. The rest
+of the line as well as all following lines indented more than the list item marker are considered
+the content of the list item and block markup.
+
+::example:
+  * List item one
+
+  * List item two
+
+   Another paragraph in the list
+
+The first list item of a list must be on a block boundary. The following ones don't need to be:
+
+::example:
+  * First list item on block boundary
+  * Second list item.
+
+    Second paragraph in second list item.
+  * Third list item.
+
+This also means that blank lines must preceed sub-lists:
+
+::example:
+  * First item
+
+    * Sub-list first item
+    * Sub-list second item
+  * Second item
+
+The following list item markers are supported:
+
+* The characters '*', '+' and '-' create a bullet list.
+* A decimal number followed by by either '.' or ')' creates an ordered list.
+
+Different list item markers are not allowed within the same list:
+
+::example:
+  * List item
+  + Not a list item but part of the preceeding paragraph
+
+  + List item in new list
+
+When creating an ordered list, the first list item marker defines the start number:
+
+::example:
+  5. First item but numbered as 5
+  1. Second item but numbered as 6
+
+Whitespace is allowed before a list item and counts against the needed indentation for its content:
+
+::example:
+  This is a paragraph.
+
+     * List item with leading whitespace.
+
+       Paragraph within the list item.
+
+    Paragraph outside the list item.
