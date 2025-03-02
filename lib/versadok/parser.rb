@@ -91,7 +91,6 @@ module VersaDok
       @scanner = StringScanner.new(''.b)
       @stack = Stack.new(Node.new(:root))
       @line_no = 1
-      @blank_at_level = 0
     end
 
     def parse(str)
