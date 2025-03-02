@@ -32,8 +32,9 @@ module VersaDok
 
     CONTENT_MODEL_MAP = { #:nodoc:
       root: :block,
-      header: :span,
       blockquote: :block,
+      list_item: :block,
+      header: :span,
       paragraph: :span,
     }
 

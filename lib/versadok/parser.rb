@@ -109,11 +109,13 @@ module VersaDok
 
       @stack.enter_indented(@current_indent) if @current_indent > 0
 
-      case @scanner.peek_byte
+      case (byte = @scanner.peek_byte)
       when 35 # #
         parse_header
       when 62 # >
         parse_blockquote
+      when 42, 43, 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57 # * + - 0-9
+        parse_list_item(byte)
       when 13, 10, nil # \r \n EOS
         byte = @scanner.scan_byte
         @scanner.scan_byte if byte == 13 && @scanner.peek_byte == 10
@@ -164,6 +166,36 @@ module VersaDok
           parse_continuation_line
         end
         @line_no += 1
+      else
+        parse_continuation_line
+      end
+    end
+
+    MARKER_MAP = {
+      42 => :asterisk,
+      43 => :plus,
+      45 => :minus,
+    }
+    (48..57).each {|byte| MARKER_MAP[byte] = :decimal }
+
+    def parse_list_item(byte)
+      if @scanner.match?(/[*+-] |(\d+)([.)]) /)
+        marker = MARKER_MAP[byte]
+        last_child = @stack.last_child
+        if last_child&.type == :list && last_child[:marker] == marker &&
+           last_child.children.last[:indent] >= @current_indent
+          @stack.enter
+        elsif @stack.block_boundary?
+          properties = {indent: 0, marker: marker}
+          properties[:start] = @scanner[1].to_i if marker == :decimal
+          @stack.append_child(Node.new(:list, properties: properties))
+        else
+          parse_continuation_line
+          return
+        end
+        @scanner.pos += @scanner.matched_size
+        @stack.append_child(Node.new(:list_item, properties: {indent: @current_indent + 1}))
+        parse_line
       else
         parse_continuation_line
       end

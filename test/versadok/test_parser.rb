@@ -297,4 +297,59 @@ describe VersaDok::Parser do
       parse_single(">\n> Test", :paragraph, 1)
     end
   end
+
+  describe "parse_list_item" do
+    it "sets the indent property on the list and list item" do
+      list = parse_single("   *   item", :list, 1)
+      assert_equal(0, list[:indent])
+      assert_equal(4, list.children.last[:indent])
+    end
+
+    it "collects list items of the same marker type into one list" do
+      parse_single("    * item 1\n* item 2", :list, 2)
+    end
+
+    it "creates separate lists for different marker types" do
+      nodes = parse_multi("* bullet\n\n- other bullet\n\n1. decimal", 3)
+      assert_equal(:asterisk, nodes[0][:marker])
+      assert_equal(:minus, nodes[1][:marker])
+      assert_equal(:decimal, nodes[2][:marker])
+    end
+
+    it "treats list items that would start a new list but are not on a block boundary as " \
+       "continuation lines" do
+      list = parse_single("* item1\n- item2", :list, 1)
+      assert_equal("item1 - item2", list.children[0].children[0].children[0][:content])
+    end
+
+    it "works for bullet lists using asterisks" do
+      list = parse_single("* item", :list, 1)
+      assert_equal(:asterisk, list[:marker])
+    end
+
+    it "works for bullet lists using pluses" do
+      list = parse_single("+ item", :list, 1)
+      assert_equal(:plus, list[:marker])
+    end
+
+    it "works for bullet lists using minuses" do
+      list = parse_single("- item", :list, 1)
+      assert_equal(:minus, list[:marker])
+    end
+
+    it "works for ordered lists using decimals" do
+      list = parse_single("1. item", :list, 1)
+      assert_equal(:decimal, list[:marker])
+    end
+
+    it "sets the start number for an ordered list" do
+      list = parse_single("42. item", :list, 1)
+      assert_equal(42, list[:start])
+    end
+
+    it "ignores the list marker if it doesn't constitute a correct marker" do
+      nodes = parse_multi("*para\n\n1para\n\n1- para", 5)
+      nodes.values_at(0, 2, 4).each {|node| assert_equal(:paragraph, node.type) }
+    end
+  end
 end
