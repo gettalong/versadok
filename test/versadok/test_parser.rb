@@ -3,7 +3,7 @@ require 'versadok/parser'
 
 describe VersaDok::Parser::Stack do
   before do
-    @stack = VersaDok::Parser::Stack.new(node(:root, properties: {indent: 0}))
+    @stack = VersaDok::Parser::Stack.new(node(:root))
   end
 
   def node(type, **args)

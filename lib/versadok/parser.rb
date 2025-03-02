@@ -65,7 +65,7 @@ module VersaDok
       end
 
       def enter_indented(indent)
-        @temp = @level
+        @temp = @level + 1
         while @temp < @stack.size && (el_indent = @stack[@temp][:indent]) && el_indent <= indent
           @level = @temp if el_indent > 0
           @temp += 1
@@ -89,7 +89,7 @@ module VersaDok
 
     def initialize
       @scanner = StringScanner.new(''.b)
-      @stack = Stack.new(Node.new(:root, properties: {indent: 0}))
+      @stack = Stack.new(Node.new(:root))
       @line_no = 1
       @blank_at_level = 0
     end
