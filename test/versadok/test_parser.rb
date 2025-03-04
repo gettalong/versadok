@@ -354,13 +354,21 @@ describe VersaDok::Parser do
   end
 
   describe "parse_extension_block" do
+    class TestExtension < VersaDok::Plugin
+      attr_reader :result
+
+      def parse_content?; false; end
+      def parse_line(str); (@lines ||= []) << str end
+      def parsing_finished!; @result = @lines.join end
+    end
+
     it "parses the extension name" do
       node = parse_single("::mark:", :extension_block, 0)
       assert_equal("mark", node[:name])
     end
 
     it "sets the indentation correctly" do
-      node = parse_single("  ::mark:", :extension_block, 0)
+      node = parse_single("  ::mark: indent=5", :extension_block, 0)
       assert_equal(3, node[:indent])
     end
 
@@ -378,16 +386,24 @@ describe VersaDok::Parser do
     end
 
     it "defers parsing to the plugin if specified" do
-      plugin = VersaDok::Plugin.new
-      plugin.define_singleton_method(:result) { @result }
-      plugin.define_singleton_method(:parse_content?) { false }
-      plugin.define_singleton_method(:parse_line) {|str| (@lines ||= []) << str }
-      plugin.define_singleton_method(:parsing_finished!) { @result = @lines.join }
-      @parser.plugins["mark"] = plugin
-
-      node = parse_single("::mark:\n para\n graph\n    \n\n > block", :extension_block, 0)
+      @parser.plugins["mark"] = ext = TestExtension.new
+      node = parse_single("::mark:\n  para\n  graph\n     \n\n  > block", :extension_block, 0)
       assert_equal(:special, node.content_model)
-      assert_equal("para\ngraph\n   \n\n> block", plugin.result)
+      assert_equal("para\ngraph\n   \n\n> block", ext.result)
+    end
+
+    it "recognizes the 'indent' attribute when deferring parsing to the extension" do
+      @parser.plugins["mark"] = ext = TestExtension.new
+      parse_single("::mark: indent=4\n    para\n      graph\n   \n\n    > block",
+                   :extension_block, 0)
+      assert_equal("para\n  graph\n\n\n> block", ext.result)
+    end
+
+    it "doesn't allow a custom 'indent' less than the default indentation" do
+      @parser.plugins["mark"] = ext = TestExtension.new
+      parse_single("  ::mark: indent=2\n    para\n      graph\n   \n\n    > block",
+                   :extension_block, 0)
+      assert_equal(" para\n   graph\n\n\n > block", ext.result)
     end
 
     it "ignores the marker if it doesn't constitute a correct marker" do

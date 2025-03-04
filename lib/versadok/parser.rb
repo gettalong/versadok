@@ -216,13 +216,15 @@ module VersaDok
         attrs = parse_attribute_list(@scanner.scan_until(/\r|\r?\n|\z/))
         parse_content = plugin.parse_content?
 
-        properties = {name: name, indent: @current_indent + 1, refs: attrs.delete(:refs)}
+        indent = @current_indent + 1
+        indent = [indent, attrs.delete("indent")&.to_i || indent + 1].max unless parse_content
+        properties = {name: name, indent: indent, refs: attrs.delete(:refs)}
         properties[:content_model] = (parse_content ? :block : :special)
         @stack.append_child(Node.new(:extension_block, properties: properties, attributes: attrs),
                             container: parse_content)
 
         unless parse_content
-          re = /[ \t\v]{#{@current_indent + 1}}|[ \t\v]{0,#{@current_indent}}(?=\r|\r?\n|\z)/
+          re = /[ \t\v]{#{indent}}|[ \t\v]{0,#{indent - 1}}(?=\r|\r?\n|\z)/
           while !@scanner.eos? && @scanner.scan(re)
             plugin.parse_line(@scanner.scan_until(/\r|\r?\n|\z/))
           end
