@@ -146,3 +146,34 @@ Whitespace is allowed before a list item and counts against the needed indentati
        Paragraph within the list item.
 
     Paragraph outside the list item.
+
+
+### Extension block
+
+A line starting with two ':' characters, followed by an extension name, another ':' character and
+either a space or the end of the line defines an extension block. The allowed characters for the
+name are 'a-z', 'A-Z', '0-9' and '_'. The rest of the line is parsed as an attribute list.
+
+::example:
+  ::extname: attribute=list #with .class
+
+The extension block can optionally have indented content following it.
+
+::example:
+  ::extname:
+    This is the content of the block.
+
+    It needs to be indented.
+
+Depending on the extension the content is either parsed as block level elements or directly
+processed by the extension.
+
+When processed by the extension the indentation needs to be two whitespace characters. This value
+can be overridden by using the attribute 'indent'. Then indentation is stripped from the lines
+before they are passed to the extension.
+
+::example:
+  ::extname: indent=4
+      All content needs to be indented 4 whitespace
+      characters.
+         The 3 leading spaces are preserved.
