@@ -28,6 +28,7 @@
 
 require 'strscan'
 require_relative 'node'
+require_relative 'plugin'
 
 module VersaDok
 
@@ -87,9 +88,12 @@ module VersaDok
 
     end
 
+    attr_reader :plugins
+
     def initialize
       @scanner = StringScanner.new(''.b)
       @stack = Stack.new(Node.new(:root))
+      @plugins = Hash.new(Plugin.new)
       @line_no = 1
     end
 
@@ -115,6 +119,8 @@ module VersaDok
         parse_blockquote
       when 42, 43, 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57 # * + - 0-9
         parse_list_item(byte)
+      when 58 # :
+        parse_extension_block
       when 13, 10, nil # \r \n EOS
         byte = @scanner.scan_byte
         @scanner.scan_byte if byte == 13 && @scanner.peek_byte == 10
@@ -200,8 +206,34 @@ module VersaDok
       end
     end
 
+    def parse_extension_block
+      if @scanner.match?(/::(\w+):(?= |\r|\r?\n|\z)/) && @stack.block_boundary?
+        name = @scanner[1]
+        plugin = @plugins[name]
+        @scanner.pos += @scanner.matched_size
+        attrs = parse_attribute_list(@scanner.scan_until(/\r|\r?\n|\z/))
+        parse_content = plugin.parse_content?
+
+        properties = {name: name, indent: @current_indent + 1, refs: attrs.delete(:refs)}
+        properties[:content_model] = (parse_content ? :block : :special)
+        @stack.append_child(Node.new(:extension_block, properties: properties, attributes: attrs),
+                            container: parse_content)
+
+        unless parse_content
+          re = /[ \t\v]{#{@current_indent + 1}}|[ \t\v]{0,#{@current_indent}}(?=\r|\r?\n|\z)/
+          while !@scanner.eos? && @scanner.scan(re)
+            plugin.parse_line(@scanner.scan_until(/\r|\r?\n|\z/))
+          end
+          plugin.parsing_finished!
+        end
+      else
+        parse_continuation_line
+      end
+    end
+
     def parse_continuation_line
-      if @stack.block_boundary? && @stack.container.content_model == :block
+      if (@stack.block_boundary? || @stack[-1].type == :extension_block) &&
+         @stack.container.content_model == :block
         @stack.append_child(Node.new(:paragraph))
       end
 
@@ -224,6 +256,35 @@ module VersaDok
       else
         @stack.append_child(Node.new(:text, properties: {content: text}), container: false)
       end
+    end
+
+    AL_ANY_CHARS = /\\\}|[^}]/
+    AL_NAME = /[^[:space:].#}]+/
+    AL_TYPE_KEY_VALUE_PAIR = /(#{AL_NAME})=(?:("|')((?:\\\}|\\\2|[^}\2])*?)\2|((?:\\\}|[^[:space:]}])+))/
+    AL_TYPE_REF = /([^[:space:]}]+)/
+    AL_TYPE_CLASS = /\.(#{AL_NAME})/
+    AL_TYPE_ID = /#(#{AL_NAME})/
+    AL_TYPE_ANY = /(?:\A|\s)(?:#{AL_TYPE_KEY_VALUE_PAIR}|#{AL_TYPE_ID}|#{AL_TYPE_CLASS}|#{AL_TYPE_REF})(?=\s|\Z)/
+
+    def parse_attribute_list(str)
+      attrs = {}
+      str = str.strip
+      return attrs if str.empty?
+
+      str.scan(AL_TYPE_ANY).each do |key, quote, val, val1, id_name, class_name, ref|
+        if ref
+          (attrs[:refs] ||= []) << ref
+        elsif class_name
+          attrs['class'] = "#{attrs['class']} #{class_name}".lstrip
+        elsif id_name
+          attrs['id'] = id_name
+        else
+          val ||= val1
+          val.gsub!(/\\(\}|#{quote})/, "\\1")
+          attrs[key] = val
+        end
+      end
+      attrs
     end
 
   end

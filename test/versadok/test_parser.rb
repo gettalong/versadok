@@ -352,4 +352,97 @@ describe VersaDok::Parser do
       nodes.values_at(0, 2, 4).each {|node| assert_equal(:paragraph, node.type) }
     end
   end
+
+  describe "parse_extension_block" do
+    it "parses the extension name" do
+      node = parse_single("::mark:", :extension_block, 0)
+      assert_equal("mark", node[:name])
+    end
+
+    it "sets the indentation correctly" do
+      node = parse_single("  ::mark:", :extension_block, 0)
+      assert_equal(3, node[:indent])
+    end
+
+    it "parses the attribute list on the marker line" do
+      node = parse_single("  ::mark: key=value .class #id ref", :extension_block, 0)
+      assert_equal({'class' => 'class', 'id' => 'id', 'key' => 'value'}, node.attributes)
+      assert_equal(['ref'], node[:refs])
+    end
+
+    it "parses the content as block elements by default" do
+      node = parse_single("::mark:\n para\ngraph\n\n > block", :extension_block, 3)
+      assert_equal(:block, node.content_model)
+      assert_equal("para graph", node.children[0].children[0][:content])
+      assert_equal(:blockquote, node.children[2].type)
+    end
+
+    it "defers parsing to the plugin if specified" do
+      plugin = VersaDok::Plugin.new
+      plugin.define_singleton_method(:result) { @result }
+      plugin.define_singleton_method(:parse_content?) { false }
+      plugin.define_singleton_method(:parse_line) {|str| (@lines ||= []) << str }
+      plugin.define_singleton_method(:parsing_finished!) { @result = @lines.join }
+      @parser.plugins["mark"] = plugin
+
+      node = parse_single("::mark:\n para\n graph\n    \n\n > block", :extension_block, 0)
+      assert_equal(:special, node.content_model)
+      assert_equal("para\ngraph\n   \n\n> block", plugin.result)
+    end
+
+    it "ignores the marker if it doesn't constitute a correct marker" do
+      nodes = parse_multi("::para\n  another", 1)
+      assert_equal(:paragraph, nodes[0].type)
+      assert_equal("::para another", nodes[0].children[0][:content])
+    end
+
+    it "creates an appropriate block for an invalidly unindented, directly following content line" do
+      nodes = parse_multi("::para:\n# another", 2)
+      assert_equal(:extension_block, nodes[0].type)
+      assert_equal(:paragraph, nodes[1].type)
+      assert_equal("# another", nodes[1].children[0][:content])
+    end
+  end
+
+  describe "parse_attribute_list" do
+    it "recognizes IDs" do
+      assert_equal({"id" => "id"}, @parser.send(:parse_attribute_list, "#id"))
+    end
+
+    it "recognizes class names" do
+      assert_equal({"class" => "cls1 cls2"}, @parser.send(:parse_attribute_list, ".cls1 .cls2"))
+    end
+
+    it "recognizes references" do
+      assert_equal({refs: ["ähm.cl#3", "omy"]}, @parser.send(:parse_attribute_list, "ähm.cl#3 omy"))
+    end
+
+    it "recognizes key-value pairs without quoting" do
+      assert_equal({"key" => "value"}, @parser.send(:parse_attribute_list, "key=value"))
+    end
+
+    it "recognizes key-value pairs with single quotes" do
+      assert_equal({"key" => "value"}, @parser.send(:parse_attribute_list, "key='value'"))
+    end
+
+    it "recognizes key-value pairs with double quotes" do
+      assert_equal({"key" => "value"}, @parser.send(:parse_attribute_list, "key=\"value\""))
+    end
+
+    it "removes escaped closing braces from values of key-value pairs" do
+      assert_equal({"key" => "}pair"}, @parser.send(:parse_attribute_list, "key=\\}pair"))
+    end
+
+    it "removes the escaped quote character from values of key-value pairs" do
+      assert_equal({"key" => "this'is"}, @parser.send(:parse_attribute_list, "key='this\'is'"))
+    end
+
+    it "doesn't allow unescaped closing braces anywhere" do
+      assert_equal({}, @parser.send(:parse_attribute_list, "#id}a .cl}ass re}e key=val}ue"))
+    end
+
+    it "works for empty strings" do
+      assert_equal({}, @parser.send(:parse_attribute_list, ""))
+    end
+  end
 end
