@@ -354,7 +354,7 @@ describe VersaDok::Parser do
   end
 
   describe "parse_extension_block" do
-    class TestExtension < VersaDok::Plugin
+    class TestExtension < VersaDok::Extension
       attr_reader :result
 
       def parse_content?; false; end
@@ -385,22 +385,22 @@ describe VersaDok::Parser do
       assert_equal(:blockquote, node.children[2].type)
     end
 
-    it "defers parsing to the plugin if specified" do
-      @parser.plugins["mark"] = ext = TestExtension.new
+    it "defers parsing to the extension if specified" do
+      @parser.extensions["mark"] = ext = TestExtension.new
       node = parse_single("::mark:\n  para\n  graph\n     \n\n  > block", :extension_block, 0)
       assert_equal(:special, node.content_model)
       assert_equal("para\ngraph\n   \n\n> block", ext.result)
     end
 
     it "recognizes the 'indent' attribute when deferring parsing to the extension" do
-      @parser.plugins["mark"] = ext = TestExtension.new
+      @parser.extensions["mark"] = ext = TestExtension.new
       parse_single("::mark: indent=4\n    para\n      graph\n   \n\n    > block",
                    :extension_block, 0)
       assert_equal("para\n  graph\n\n\n> block", ext.result)
     end
 
     it "doesn't allow a custom 'indent' less than the default indentation" do
-      @parser.plugins["mark"] = ext = TestExtension.new
+      @parser.extensions["mark"] = ext = TestExtension.new
       parse_single("  ::mark: indent=2\n    para\n      graph\n   \n\n    > block",
                    :extension_block, 0)
       assert_equal(" para\n   graph\n\n\n > block", ext.result)

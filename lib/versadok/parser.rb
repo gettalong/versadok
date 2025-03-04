@@ -28,7 +28,7 @@
 
 require 'strscan'
 require_relative 'node'
-require_relative 'plugin'
+require_relative 'extension'
 
 module VersaDok
 
@@ -88,12 +88,12 @@ module VersaDok
 
     end
 
-    attr_reader :plugins
+    attr_reader :extensions
 
     def initialize
       @scanner = StringScanner.new(''.b)
       @stack = Stack.new(Node.new(:root))
-      @plugins = Hash.new(Plugin.new)
+      @extensions = Hash.new(Extension.new)
       @line_no = 1
     end
 
@@ -211,10 +211,10 @@ module VersaDok
     def parse_extension_block
       if @scanner.match?(/::(\w+):(?= |\r|\r?\n|\z)/) && @stack.block_boundary?
         name = @scanner[1]
-        plugin = @plugins[name]
+        extension = @extensions[name]
         @scanner.pos += @scanner.matched_size
         attrs = parse_attribute_list(@scanner.scan_until(/\r|\r?\n|\z/))
-        parse_content = plugin.parse_content?
+        parse_content = extension.parse_content?
 
         indent = @current_indent + 1
         indent = [indent, attrs.delete("indent")&.to_i || indent + 1].max unless parse_content
@@ -226,9 +226,9 @@ module VersaDok
         unless parse_content
           re = /[ \t\v]{#{indent}}|[ \t\v]{0,#{indent - 1}}(?=\r|\r?\n|\z)/
           while !@scanner.eos? && @scanner.scan(re)
-            plugin.parse_line(@scanner.scan_until(/\r|\r?\n|\z/))
+            extension.parse_line(@scanner.scan_until(/\r|\r?\n|\z/))
           end
-          plugin.parsing_finished!
+          extension.parsing_finished!
         end
       else
         parse_continuation_line

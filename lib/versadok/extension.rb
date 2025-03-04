@@ -28,7 +28,7 @@
 
 module VersaDok
 
-  class Plugin
+  class Extension
 
     def initialize
     end
