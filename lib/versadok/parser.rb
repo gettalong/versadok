@@ -108,6 +108,9 @@ module VersaDok
 
     private
 
+    # All possible line endings plus EOS
+    EOL_RE_STR = "\\r\\n?|\\n|\\z"
+
     def parse_line
       @scanner.scan(/[ \t\v]*/)
       @current_indent = @scanner.matched_size
@@ -161,7 +164,7 @@ module VersaDok
         else
           parse_continuation_line
         end
-      elsif @scanner.match?(/>(?:\n|\r\n?)/)
+      elsif @scanner.match?(/>(?:#{EOL_RE_STR})/o)
         if @stack.last_child&.type == :blockquote
           @scanner.pos += @scanner.matched_size
           @stack.enter
@@ -209,11 +212,11 @@ module VersaDok
     end
 
     def parse_extension_block
-      if @scanner.match?(/::(\w+):(?= |\r|\r?\n|\z)/) && @stack.block_boundary?
+      if @scanner.match?(/::(\w+):(?= |#{EOL_RE_STR})/o) && @stack.block_boundary?
         name = @scanner[1]
         extension = @extensions[name]
         @scanner.pos += @scanner.matched_size
-        attrs = parse_attribute_list(@scanner.scan_until(/\r|\r?\n|\z/))
+        attrs = parse_attribute_list(@scanner.scan_until(/#{EOL_RE_STR}/o))
         parse_content = extension.parse_content?
 
         indent = @current_indent + 1
@@ -224,9 +227,9 @@ module VersaDok
                             container: parse_content)
 
         unless parse_content
-          re = /[ \t\v]{#{indent}}|[ \t\v]{0,#{indent - 1}}(?=\r|\r?\n|\z)/
+          re = /[ \t\v]{#{indent}}|[ \t\v]{0,#{indent - 1}}(?=#{EOL_RE_STR})/
           while !@scanner.eos? && @scanner.scan(re)
-            extension.parse_line(@scanner.scan_until(/\r|\r?\n|\z/))
+            extension.parse_line(@scanner.scan_until(/#{EOL_RE_STR}/o))
           end
           extension.parsing_finished!
         end
@@ -243,7 +246,7 @@ module VersaDok
 
       @stack.reset_level(-1)
       add_text(' ') if @stack.last_child&.type == :text
-      while !@scanner.eos? && (text = @scanner.scan_until(/(?=\r|\r?\n|\z)/))
+      while !@scanner.eos? && (text = @scanner.scan_until(/(?=#{EOL_RE_STR})/o))
         add_text(text)
         case @scanner.peek_byte
         when 10, 13 # \n \r

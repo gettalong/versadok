@@ -199,8 +199,8 @@ describe VersaDok::Parser do
     end
 
     it "handles CR, LF and CRLF line endings" do
-      children = parse_multi("\r\r\n\n", 1)
-      assert_equal(:blank, children[0].type)
+      para = parse_single("test\rtest\r\ntest\n", :paragraph, 1)
+      assert_equal("test test test", para.children[0][:content])
     end
   end
 
@@ -254,8 +254,8 @@ describe VersaDok::Parser do
     end
 
     it "handles a line with just the marker and nothing else as paragraph" do
-      para = parse_single(">\r>\r\n>\n", :paragraph, 1)
-      assert_equal("> > >", para.children[0][:content])
+      para = parse_single(">\r>\r\n>\n>", :paragraph, 1)
+      assert_equal("> > > >", para.children[0][:content])
     end
 
     it "parses lines with the marker and nothing else on the line" do
