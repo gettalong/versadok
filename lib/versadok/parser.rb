@@ -106,6 +106,8 @@ module VersaDok
       @stack[0]
     end
 
+    private
+
     def parse_line
       @scanner.scan(/[ \t\v]*/)
       @current_indent = @scanner.matched_size
