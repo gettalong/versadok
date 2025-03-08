@@ -10,6 +10,17 @@ describe VersaDok::Node do
     @node = node(:root)
   end
 
+  describe "category" do
+    it "returns the set category" do
+      @node.properties = {category: :inline}
+      assert_equal(:inline, @node.category)
+    end
+
+    it "returns the pre-defined category if none is set" do
+      assert_equal(:block, @node.category)
+    end
+  end
+
   describe "content_model" do
     it "returns the set content model" do
       @node.properties = {content_model: :span}

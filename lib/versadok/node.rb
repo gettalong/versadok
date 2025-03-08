@@ -30,6 +30,17 @@ module VersaDok
 
   class Node
 
+    CATEGORY_MAP = { #:nodoc:
+      root: :block,
+      blockquote: :block,
+      list_item: :block,
+      header: :block,
+      paragraph: :block,
+      strong: :inline,
+      emphasis: :inline,
+      text: :inline,
+    }
+
     CONTENT_MODEL_MAP = { #:nodoc:
       root: :block,
       blockquote: :block,
@@ -51,6 +62,10 @@ module VersaDok
 
     def children
       @children ||= []
+    end
+
+    def category
+      properties&.[](:category) || CATEGORY_MAP[@type]
     end
 
     def content_model
