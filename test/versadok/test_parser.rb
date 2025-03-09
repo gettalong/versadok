@@ -199,8 +199,8 @@ describe VersaDok::Parser do
     end
 
     it "handles CR, LF and CRLF line endings" do
-      para = parse_single("test\rtest\r\ntest\n", :paragraph, 1)
-      assert_equal("test test test", para.children[0][:content])
+      children = parse_multi("  \r  \r\n  \n", 1)
+      assert_equal(:blank, children[0].type)
     end
   end
 
@@ -227,7 +227,7 @@ describe VersaDok::Parser do
     end
 
     it "parses continuation lines" do
-      header = parse_single("# header\ncontin\n  ued\n# here\n## and here", :header, 1)
+      header = parse_single("# header\ncontin\r\n  ued\r# here\n## and here", :header, 1)
       assert_equal("header contin ued here ## and here", header.children[0][:content])
     end
 
