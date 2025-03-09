@@ -57,6 +57,34 @@ module VersaDok
         @stack[level]
       end
 
+      def close_node(type)
+        return unless (index = @stack.rindex {|n| n.type == type })
+        handle_unfinished(index)
+        true
+      end
+
+      def handle_unfinished(start_index)
+        (@stack.size - 1).downto(start_index + 1) do |i|
+          break if @stack[i].category == :block
+          children = @stack[i - 1].children
+          node = children.delete_at(-1)
+          if children.last&.type == :text
+            children.last[:content] << node[:marker]
+          else
+            children << Node.new(:text, properties: {content: +node[:marker]})
+          end
+          if node.children.first&.type == :text
+            children.last[:content] << node.children.first[:content]
+            children.concat(node.children[1..-1])
+          else
+            children.concat(node.children)
+          end
+        end
+        count = @stack.size - start_index
+        @stack.pop(count)
+        @level -= count
+      end
+
       def reset_level(level = 0)
         @level = (@stack.size + level) % @stack.size
       end
@@ -103,6 +131,11 @@ module VersaDok
         @stack.reset_level
         parse_line
       end
+      self
+    end
+
+    def finish
+      @stack.handle_unfinished(1)
       @stack[0]
     end
 
@@ -245,16 +278,27 @@ module VersaDok
       end
 
       @stack.reset_level(-1)
-      add_text(' ') if @stack.last_child&.type == :text
-      while !@scanner.eos? && (text = @scanner.scan_until(/(?=#{EOL_RE_STR})/o))
-        add_text(text)
+      add_text(+' ') if @stack.last_child&.category == :inline
+      while !@scanner.eos? && (text = @scanner.scan_until(/(?=[\*_]|#{EOL_RE_STR})/o))
+        add_text(text) unless text.empty?
         case @scanner.peek_byte
+        when 42 # *
+          parse_inline_simple(:strong, '*')
+        when 95 # _
+          parse_inline_simple(:emphasis, '_')
         when 10, 13 # \n \r
           @scanner.scan_byte if @scanner.scan_byte == 13 && @scanner.peek_byte == 10
           break
         end
       end
       @line_no += 1
+    end
+
+    def parse_inline_simple(type, marker)
+      @scanner.scan_byte
+      unless @stack.close_node(type)
+        @stack.append_child(Node.new(type, properties: {marker: marker}))
+      end
     end
 
     def add_text(text)

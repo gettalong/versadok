@@ -51,6 +51,65 @@ describe VersaDok::Parser::Stack do
     end
   end
 
+  describe "close_node + handle_unfinished" do
+    it "does nothing if a node of the given type is not on the stack" do
+      @stack.append_child(node(:paragraph))
+      assert_nil(@stack.close_node(:strong))
+    end
+
+    it "closes the given node" do
+      @stack.append_child(node(:paragraph))
+      @stack.append_child(node(:strong))
+      @stack.append_child(node(:text, properties: {content: 'test'}), container: false)
+      @stack.close_node(:strong)
+      assert_equal(:paragraph, @stack.container.type)
+      @stack.reset_level(-1)
+      assert_equal(:paragraph, @stack.container.type)
+    end
+
+    it "removes unclosed child node with text node before" do
+      @stack.append_child(node(:paragraph))
+      @stack.append_child(node(:strong))
+      @stack.append_child(node(:text, properties: {content: +'before'}), container: false)
+      @stack.append_child(node(:emphasis, properties: {marker: '_'}))
+      @stack.append_child(node(:text, properties: {content: +'emph'}), container: false)
+      @stack.close_node(:strong)
+      assert_equal(:paragraph, @stack.container.type)
+      assert_equal('before_emph', @stack.container.children[0].children[0][:content])
+    end
+
+    it "removes unclosed child node with no text node before" do
+      @stack.append_child(node(:paragraph))
+      @stack.append_child(node(:strong))
+      @stack.append_child(node(:emphasis, properties: {marker: '_'}))
+      @stack.append_child(node(:text, properties: {content: +'emph'}), container: false)
+      @stack.close_node(:strong)
+      assert_equal(:paragraph, @stack.container.type)
+      assert_equal('_emph', @stack.container.children[0].children[0][:content])
+    end
+
+    it "removes unclosed child node with non-text node as first child" do
+      @stack.append_child(node(:paragraph))
+      @stack.append_child(node(:strong))
+      @stack.append_child(node(:emphasis, properties: {marker: '_'}))
+      @stack.append_child(node(:nontext, properties: {marker: '+'}))
+      @stack.append_child(node(:text, properties: {content: +'emph'}), container: false)
+      @stack.close_node(:nontext)
+      @stack.close_node(:strong)
+      assert_equal(:paragraph, @stack.container.type)
+      assert_equal('_', @stack.container.children[0].children[0][:content])
+    end
+
+    it "removes unclosed child node with no children" do
+      @stack.append_child(node(:paragraph))
+      @stack.append_child(node(:strong))
+      @stack.append_child(node(:emphasis, properties: {marker: '_'}))
+      @stack.close_node(:strong)
+      assert_equal(:paragraph, @stack.container.type)
+      assert_equal('_', @stack.container.children[0].children[0][:content])
+    end
+  end
+
   describe "reset_level" do
     before do
       @stack.append_child(node(:level1))
@@ -164,7 +223,7 @@ describe VersaDok::Parser do
   end
 
   def parse_single(str, type, child_count)
-    root = @parser.parse(str)
+    root = @parser.parse(str).finish
     assert_equal(1, root.children.size)
     retval = root.children[0]
     assert_equal(type, retval.type)
@@ -173,7 +232,7 @@ describe VersaDok::Parser do
   end
 
   def parse_multi(str, count)
-    root = @parser.parse(str)
+    root = @parser.parse(str).finish
     assert_equal(count, root.children.size)
     root.children
   end
@@ -459,6 +518,27 @@ describe VersaDok::Parser do
 
     it "works for empty strings" do
       assert_equal({}, @parser.send(:parse_attribute_list, ""))
+    end
+  end
+
+  describe "parse_inline_simple" do
+    it "works for content marked-up with strong" do
+      node = parse_single("*home*", :paragraph, 1)
+      assert_equal(:strong, node.children[0].type)
+    end
+
+    it "works for content marked-up with emphasis" do
+      node = parse_single("_home_", :paragraph, 1)
+      assert_equal(:emphasis, node.children[0].type)
+    end
+
+    it "handles unclosed nodes" do
+      node = parse_single("_home *star_ *home _star*", :paragraph, 3)
+      assert_equal(:emphasis, node.children[0].type)
+      assert_equal(:text, node.children[1].type)
+      assert_equal(:strong, node.children[2].type)
+      assert_equal('home *star', node.children[0].children[0][:content])
+      assert_equal('home _star', node.children[2].children[0][:content])
     end
   end
 end
