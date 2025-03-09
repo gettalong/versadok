@@ -57,14 +57,12 @@ module VersaDok
         @stack[level]
       end
 
-      def close_node(type)
-        return unless (index = @stack.rindex {|n| n.type == type })
-        handle_unfinished(index)
-        true
+      def node_index(type)
+        @stack.rindex {|n| n.type == type }
       end
 
-      def handle_unfinished(start_index)
-        (@stack.size - 1).downto(start_index + 1) do |i|
+      def close_node(index)
+        (@stack.size - 1).downto(index + 1) do |i|
           break if @stack[i].category == :block
           children = @stack[i - 1].children
           node = children.delete_at(-1)
@@ -80,7 +78,7 @@ module VersaDok
             children.concat(node.children)
           end
         end
-        count = @stack.size - start_index
+        count = @stack.size - index
         @stack.pop(count)
         @level -= count
       end
@@ -135,7 +133,7 @@ module VersaDok
     end
 
     def finish
-      @stack.handle_unfinished(1)
+      @stack.close_node(1)
       @stack[0]
     end
 
@@ -271,6 +269,13 @@ module VersaDok
       end
     end
 
+    INLINE_RE = /(?=
+                   [*_](?=(.|#{EOL_RE_STR}))  # Match strong and emphasis
+                   |#{EOL_RE_STR})
+                /ox
+
+    WHITESPACE_LUT = {9 => true, 10 => true, 11 => true, 13 => true, 32 => true, nil => true}
+
     def parse_continuation_line
       if (@stack.block_boundary? || @stack[-1].type == :extension_block) &&
          @stack.container.content_model == :block
@@ -279,13 +284,14 @@ module VersaDok
 
       @stack.reset_level(-1)
       add_text(+' ') if @stack.last_child&.category == :inline
-      while !@scanner.eos? && (text = @scanner.scan_until(/(?=[\*_]|#{EOL_RE_STR})/o))
+      while !@scanner.eos? && (text = @scanner.scan_until(INLINE_RE))
         add_text(text) unless text.empty?
+        last_byte = @scanner.string.getbyte(@scanner.pos - 1) if @scanner.pos > 0
         case @scanner.peek_byte
         when 42 # *
-          parse_inline_simple(:strong, '*')
+          parse_inline_simple(:strong, '*', !@scanner[1].match?(/\s/), !WHITESPACE_LUT[last_byte])
         when 95 # _
-          parse_inline_simple(:emphasis, '_')
+          parse_inline_simple(:emphasis, '_', !@scanner[1].match?(/\s/), !WHITESPACE_LUT[last_byte])
         when 10, 13 # \n \r
           @scanner.scan_byte if @scanner.scan_byte == 13 && @scanner.peek_byte == 10
           break
@@ -294,10 +300,18 @@ module VersaDok
       @line_no += 1
     end
 
-    def parse_inline_simple(type, marker)
+    def parse_inline_simple(type, marker, is_opening, is_closing)
       @scanner.scan_byte
-      unless @stack.close_node(type)
+      if (index = @stack.node_index(type))
+        if is_closing
+          @stack.close_node(index)
+        else
+          add_text(marker)
+        end
+      elsif is_opening
         @stack.append_child(Node.new(type, properties: {marker: marker}))
+      else
+        add_text(marker)
       end
     end
 

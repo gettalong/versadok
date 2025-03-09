@@ -51,17 +51,26 @@ describe VersaDok::Parser::Stack do
     end
   end
 
-  describe "close_node + handle_unfinished" do
-    it "does nothing if a node of the given type is not on the stack" do
-      @stack.append_child(node(:paragraph))
-      assert_nil(@stack.close_node(:strong))
+  describe "node_index" do
+    it "returns the highest index of the node with the given type" do
+      @stack.append_child(node(:strong))
+      @stack.append_child(node(:strong))
+      @stack.append_child(node(:other))
+      assert_equal(2, @stack.node_index(:strong))
     end
 
-    it "closes the given node" do
+    it "returns nil if no node with the given type exists" do
+      @stack.append_child(node(:other))
+      assert_nil(@stack.node_index(:strong))
+    end
+  end
+
+  describe "close_node" do
+    it "closes the  given node" do
       @stack.append_child(node(:paragraph))
       @stack.append_child(node(:strong))
       @stack.append_child(node(:text, properties: {content: 'test'}), container: false)
-      @stack.close_node(:strong)
+      @stack.close_node(@stack.node_index(:strong))
       assert_equal(:paragraph, @stack.container.type)
       @stack.reset_level(-1)
       assert_equal(:paragraph, @stack.container.type)
@@ -73,7 +82,7 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:text, properties: {content: +'before'}), container: false)
       @stack.append_child(node(:emphasis, properties: {marker: '_'}))
       @stack.append_child(node(:text, properties: {content: +'emph'}), container: false)
-      @stack.close_node(:strong)
+      @stack.close_node(@stack.node_index(:strong))
       assert_equal(:paragraph, @stack.container.type)
       assert_equal('before_emph', @stack.container.children[0].children[0][:content])
     end
@@ -83,7 +92,7 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:strong))
       @stack.append_child(node(:emphasis, properties: {marker: '_'}))
       @stack.append_child(node(:text, properties: {content: +'emph'}), container: false)
-      @stack.close_node(:strong)
+      @stack.close_node(@stack.node_index(:strong))
       assert_equal(:paragraph, @stack.container.type)
       assert_equal('_emph', @stack.container.children[0].children[0][:content])
     end
@@ -94,8 +103,8 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:emphasis, properties: {marker: '_'}))
       @stack.append_child(node(:nontext, properties: {marker: '+'}))
       @stack.append_child(node(:text, properties: {content: +'emph'}), container: false)
-      @stack.close_node(:nontext)
-      @stack.close_node(:strong)
+      @stack.close_node(@stack.node_index(:nontext))
+      @stack.close_node(@stack.node_index(:strong))
       assert_equal(:paragraph, @stack.container.type)
       assert_equal('_', @stack.container.children[0].children[0][:content])
     end
@@ -104,7 +113,7 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:paragraph))
       @stack.append_child(node(:strong))
       @stack.append_child(node(:emphasis, properties: {marker: '_'}))
-      @stack.close_node(:strong)
+      @stack.close_node(@stack.node_index(:strong))
       assert_equal(:paragraph, @stack.container.type)
       assert_equal('_', @stack.container.children[0].children[0][:content])
     end
@@ -530,6 +539,44 @@ describe VersaDok::Parser do
     it "works for content marked-up with emphasis" do
       node = parse_single("_home_", :paragraph, 1)
       assert_equal(:emphasis, node.children[0].type)
+    end
+
+    it "works inside of words" do
+      node = parse_single("a*test*b", :paragraph, 3)
+      assert_equal(:strong, node.children[1].type)
+      assert_equal("a", node.children[0][:content])
+      assert_equal("b", node.children[2][:content])
+    end
+
+    it "ignores closing markers when element has not been opened" do
+      node = parse_single("a* test", :paragraph, 1)
+      assert_equal("a* test", node.children[0][:content])
+    end
+
+    it "ignores markers with whitespace around them" do
+      node = parse_single("a * b*", :paragraph, 1)
+      assert_equal("a * b*", node.children[0][:content])
+    end
+
+    it "doesn't allow nesting same-type elements" do
+      node = parse_single("a*test *b* test*", :paragraph, 3)
+      assert_equal(:strong, node.children[1].type)
+      assert_equal("a", node.children[0][:content])
+      assert_equal("test *b", node.children[1].children[0][:content])
+      assert_equal(" test*", node.children[2][:content])
+    end
+
+    it "works directly before continuation lines borders" do
+      node = parse_single("*test*\n_hallo_", :paragraph, 3)
+      assert_equal(:strong, node.children[0].type)
+      assert_equal(:emphasis, node.children[2].type)
+      assert_equal(" ", node.children[1][:content])
+    end
+
+    it "works across continuation lines" do
+      node = parse_single("*test\rhallo*", :paragraph, 1)
+      assert_equal(:strong, node.children[0].type)
+      assert_equal("test hallo", node.children[0].children[0][:content])
     end
 
     it "handles unclosed nodes" do
