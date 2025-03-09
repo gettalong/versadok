@@ -305,7 +305,7 @@ module VersaDok
       if @stack.last_child&.type == :text
         @stack.last_child[:content] << text
       else
-        @stack.append_child(Node.new(:text, properties: {content: text}), container: false)
+        @stack.append_child(Node.new(:text, properties: {content: +text}), container: false)
       end
     end
 
