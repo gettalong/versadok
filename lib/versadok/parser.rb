@@ -282,7 +282,7 @@ module VersaDok
       end
 
       @stack.reset_level(-1)
-      add_text(+' ') if @stack.last_child&.category == :inline
+      add_text(' ') if @stack.last_child&.category == :inline
       while !@scanner.eos? && (text = @scanner.scan_until(INLINE_RE))
         add_text(text) unless text.empty?
         last_byte = @scanner.string.getbyte(@scanner.pos - 1) if @scanner.pos > 0
