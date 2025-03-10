@@ -76,6 +76,16 @@ describe VersaDok::Parser::Stack do
       assert_equal(:paragraph, @stack.container.type)
     end
 
+    it "stops processing when encountering a non-inline node" do
+      @stack.append_child(node(:first))
+      @stack.append_child(node(:second))
+      @stack.append_child(node(:strong))
+      @stack.append_child(node(:text, properties: {content: 'test'}), container: false)
+      @stack.close_node(@stack.node_index(:first))
+      assert_equal(:root, @stack.container.type)
+      assert_equal(:second, @stack.container.children[0].children[0].type)
+    end
+
     it "removes unclosed child node with text node before" do
       @stack.append_child(node(:paragraph))
       @stack.append_child(node(:strong))

@@ -63,7 +63,7 @@ module VersaDok
 
       def close_node(index)
         (@stack.size - 1).downto(index + 1) do |i|
-          break if @stack[i].category == :block
+          break if @stack[i].category != :inline
           children = @stack[i - 1].children
           node = children.delete_at(-1)
           if children.last&.type == :text
