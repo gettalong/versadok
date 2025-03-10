@@ -1,5 +1,7 @@
 # -*- encoding: utf-8 -*-
 
+gem 'strscan'
+
 begin
   require 'simplecov'
   SimpleCov.start do
