@@ -141,6 +141,9 @@ module VersaDok
     # All possible line endings plus EOS
     EOL_RE_STR = "\\r\\n?|\\n|\\z"
 
+    # The single :blank node.
+    BLANK_NODE = Node.new(:blank)
+
     def parse_line
       @scanner.skip(/[ \t\v]*/)
       @current_indent = @scanner.matched_size
@@ -161,7 +164,7 @@ module VersaDok
         @scanner.scan_byte if byte == 13 && @scanner.peek_byte == 10
         @stack.enter_indented(1000)
         unless @stack.last_child&.type == :blank
-          @stack.append_child(Node.new(:blank), container: false)
+          @stack.append_child(BLANK_NODE, container: false)
         end
         @line_no += 1
       else
@@ -200,7 +203,7 @@ module VersaDok
           @stack.enter
           @stack.enter_indented(1000)
           unless @stack.last_child.type == :blank
-            @stack.append_child(Node.new(:blank), container: false)
+            @stack.append_child(BLANK_NODE, container: false)
           end
         else
           parse_continuation_line
