@@ -13,7 +13,7 @@ Some block elements use indentation for their content. The indentation level is 
 number of whitespace characters. This means a single tab only counts as a single character.
 
 
-## Block Markup
+## Block markup
 
 ### Paragraph
 
@@ -177,3 +177,43 @@ before they are passed to the extension.
       All content needs to be indented 4 whitespace
       characters.
          The 3 leading spaces are preserved.
+
+
+## Inline Markup
+
+### Literal text
+
+While some characters are used to define inline elements, all other characters are parsed as literal
+text.
+
+::example:
+  This is all just regular text,
+  with no special meaning.
+
+To prevent the effect of a special character, it can be backslash-escaped, resulting in the special
+character to be treated literally.
+
+::example:
+  The following \* does nothing due to
+  it being escaped.
+
+  \# This is not a header.
+
+The following special characters can be escaped: :escaped_chars:[].
+
+
+### Strong and emphasis
+
+Part of the text can be marked up as strong (usually shown in a bold face) by using the '*'
+character and as emphasis (usually shown in an italic face) by using the '_' character.
+
+::example:
+  The following *part is strong*.
+  While _this is emphasized_.
+
+Note that the opening marker must not be followed by whitespace while the closing marker must not be
+preceeded by whitespace.
+
+::example:
+  This* is not a strong* element.
+  And *neither is this *here.
