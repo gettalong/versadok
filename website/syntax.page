@@ -201,6 +201,11 @@ character to be treated literally.
 
 The following special characters can be escaped: :escaped_chars:[].
 
+Besides the special characters, the following escape sequences are supported:
+
+* "\\ " (space) will be converted to a non-breaking space
+* "\\\\" (backslash) will be converted to a single backslash
+
 
 ### Strong and emphasis
 
