@@ -237,6 +237,17 @@ describe VersaDok::Parser::Stack do
       assert_equal([n], @stack[1].children)
       assert_equal(n, @stack.container)
     end
+
+    it "ensures that unclosed inline children are removed" do
+      n = node(:block, properties: {category: :block})
+      @stack.append_child(n)
+      @stack.append_child(node(:strong, properties: {marker: '*'}))
+      @stack.append_child(node(:text, properties: {content: 'test'}), container: false)
+      @stack.reset_level
+      @stack.append_child(node(:blank))
+      assert_equal(1, n.children.size)
+      assert_equal('*test', n.children[0][:content])
+    end
   end
 
   it "can output the stack as a string" do

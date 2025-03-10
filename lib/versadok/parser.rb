@@ -78,9 +78,8 @@ module VersaDok
             children.concat(node.children)
           end
         end
-        count = @stack.size - index
-        @stack.pop(count)
-        @level -= count
+        @stack.pop(@stack.size - index)
+        @level = index - 1
       end
 
       def reset_level(level = 0)
@@ -100,7 +99,7 @@ module VersaDok
       end
 
       def append_child(node, container: true)
-        @stack.slice!((@level + 1)..-1) unless @level + 1 == @stack.size
+        close_node(@level + 1) unless @level + 1 == @stack.size
         @stack.last << node
         if container
           @stack << node
