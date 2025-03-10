@@ -142,7 +142,7 @@ module VersaDok
     EOL_RE_STR = "\\r\\n?|\\n|\\z"
 
     def parse_line
-      @scanner.scan(/[ \t\v]*/)
+      @scanner.skip(/[ \t\v]*/)
       @current_indent = @scanner.matched_size
 
       @stack.enter_indented(@current_indent) if @current_indent > 0
