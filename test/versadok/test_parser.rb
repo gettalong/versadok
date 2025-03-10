@@ -523,43 +523,43 @@ describe VersaDok::Parser do
 
   describe "parse_attribute_list" do
     it "recognizes IDs" do
-      assert_equal({"id" => "id"}, @parser.send(:parse_attribute_list, "#id"))
+      assert_equal({"id" => "id"}, @parser.send(:parse_attribute_list, +"#id"))
     end
 
     it "recognizes class names" do
-      assert_equal({"class" => "cls1 cls2"}, @parser.send(:parse_attribute_list, ".cls1 .cls2"))
+      assert_equal({"class" => "cls1 cls2"}, @parser.send(:parse_attribute_list, +".cls1 .cls2"))
     end
 
     it "recognizes references" do
-      assert_equal({refs: ["ähm.cl#3", "omy"]}, @parser.send(:parse_attribute_list, "ähm.cl#3 omy"))
+      assert_equal({refs: ["ähm.cl#3", "omy"]}, @parser.send(:parse_attribute_list, +"ähm.cl#3 omy"))
     end
 
     it "recognizes key-value pairs without quoting" do
-      assert_equal({"key" => "value"}, @parser.send(:parse_attribute_list, "key=value"))
+      assert_equal({"key" => "value"}, @parser.send(:parse_attribute_list, +"key=value"))
     end
 
     it "recognizes key-value pairs with single quotes" do
-      assert_equal({"key" => "value"}, @parser.send(:parse_attribute_list, "key='value'"))
+      assert_equal({"key" => "value"}, @parser.send(:parse_attribute_list, +"key='value'"))
     end
 
     it "recognizes key-value pairs with double quotes" do
-      assert_equal({"key" => "value"}, @parser.send(:parse_attribute_list, "key=\"value\""))
+      assert_equal({"key" => "value"}, @parser.send(:parse_attribute_list, +"key=\"value\""))
     end
 
     it "removes escaped closing braces from values of key-value pairs" do
-      assert_equal({"key" => "}pair"}, @parser.send(:parse_attribute_list, "key=\\}pair"))
+      assert_equal({"key" => "}pair"}, @parser.send(:parse_attribute_list, +"key=\\}pair"))
     end
 
     it "removes the escaped quote character from values of key-value pairs" do
-      assert_equal({"key" => "this'is"}, @parser.send(:parse_attribute_list, "key='this\'is'"))
+      assert_equal({"key" => "this'is"}, @parser.send(:parse_attribute_list, +"key='this\\'is'"))
     end
 
     it "doesn't allow unescaped closing braces anywhere" do
-      assert_equal({}, @parser.send(:parse_attribute_list, "#id}a .cl}ass re}e key=val}ue"))
+      assert_equal({}, @parser.send(:parse_attribute_list, +"#id}a .cl}ass re}e key=val}ue"))
     end
 
     it "works for empty strings" do
-      assert_equal({}, @parser.send(:parse_attribute_list, ""))
+      assert_equal({}, @parser.send(:parse_attribute_list, +""))
     end
   end
 

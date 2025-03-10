@@ -332,7 +332,7 @@ module VersaDok
 
     def parse_attribute_list(str)
       attrs = {}
-      str = str.strip
+      str.strip!
       return attrs if str.empty?
 
       str.scan(AL_TYPE_ANY).each do |key, quote, val, val1, id_name, class_name, ref|
