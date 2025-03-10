@@ -46,13 +46,13 @@ describe VersaDok::Node do
   it "can output itself as string" do
     assert_equal("root", @node.to_s)
     @node.properties = {test: :value}
-    assert_equal("root {test: :value}", @node.to_s)
+    assert_equal("root #{@node.properties}", @node.to_s)
     @node.attributes = {"key": "value"}
-    assert_equal("root {test: :value} key=\"value\"", @node.to_s)
+    assert_equal("root #{@node.properties} key=\"value\"", @node.to_s)
     @node << (node(:child1) << node(:level2))
     @node << node(:child2)
     @node << node(:child3)
-    assert_equal("root {test: :value} key=\"value\"\n" \
+    assert_equal("root #{@node.properties} key=\"value\"\n" \
                  "  child1\n    level2\n  child2\n  child3", @node.to_s)
   end
 end
