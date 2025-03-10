@@ -554,6 +554,10 @@ describe VersaDok::Parser do
       assert_equal({"key" => "this'is"}, @parser.send(:parse_attribute_list, +"key='this\\'is'"))
     end
 
+    it "ignores escaped characters except for the closing brace and quote character" do
+      assert_equal({"key" => "t\\his'is"}, @parser.send(:parse_attribute_list, +"key='t\\his\\'is'"))
+    end
+
     it "doesn't allow unescaped closing braces anywhere" do
       assert_equal({}, @parser.send(:parse_attribute_list, +"#id}a .cl}ass re}e key=val}ue"))
     end

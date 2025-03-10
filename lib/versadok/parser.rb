@@ -329,6 +329,11 @@ module VersaDok
     AL_TYPE_CLASS = /\.(#{AL_NAME})/
     AL_TYPE_ID = /#(#{AL_NAME})/
     AL_TYPE_ANY = /(?:\A|\s)(?:#{AL_TYPE_KEY_VALUE_PAIR}|#{AL_TYPE_ID}|#{AL_TYPE_CLASS}|#{AL_TYPE_REF})(?=\s|\Z)/
+    VALUE_GSUB_RE_MAP = {
+      '"' => /\\(\}|")/,
+      "'" => /\\(\}|')/,
+      nil => /\\(\})/,
+    }
 
     def parse_attribute_list(str)
       attrs = {}
@@ -344,7 +349,7 @@ module VersaDok
           attrs['id'] = id_name
         else
           val ||= val1
-          val.gsub!(/\\(\}|#{quote})/, "\\1")
+          val.gsub!(VALUE_GSUB_RE_MAP[quote], "\\1")
           attrs[key] = val
         end
       end
