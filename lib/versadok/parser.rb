@@ -269,8 +269,9 @@ module VersaDok
     end
 
     INLINE_RE = /(?=
-                   [*_](?=.|#{EOL_RE_STR})    # Match strong and emphasis
-                   |#{EOL_RE_STR})            # Match end of line
+                   \\(?<backslash>[*_ \\])     # Match backslash escapes
+                   |[*_](?=.|#{EOL_RE_STR})    # Match strong and emphasis
+                   |#{EOL_RE_STR})             # Match end of line
                 /ox
 
     WHITESPACE_LUT = {9 => true, 10 => true, 11 => true, 13 => true, 32 => true, nil => true}
@@ -295,6 +296,8 @@ module VersaDok
           @scanner.scan_byte
           parse_inline_simple(:emphasis, '_', !WHITESPACE_LUT[@scanner.peek_byte],
                               !WHITESPACE_LUT[last_byte])
+        when 92 # \
+          parse_backslash_escape(@scanner[:backslash])
         when 10, 13 # \n \r
           @scanner.scan_byte if @scanner.scan_byte == 13 && @scanner.peek_byte == 10
           break
@@ -314,6 +317,15 @@ module VersaDok
         @stack.append_child(Node.new(type, properties: {marker: marker}))
       else
         add_text(marker)
+      end
+    end
+
+    def parse_backslash_escape(char)
+      @scanner.pos += 2
+      if char == ' '
+        add_text("\u00A0")
+      else
+        add_text(char)
       end
     end
 

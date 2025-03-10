@@ -625,4 +625,21 @@ describe VersaDok::Parser do
       assert_equal('home _star', node.children[2].children[0][:content])
     end
   end
+
+  describe "parse_backslash_escape" do
+    it "handles the marker characters for inline markup" do
+      node = parse_single("This \\*is _not\\_ marked* up.", :paragraph, 1)
+      assert_equal('This *is _not_ marked* up.', node.children[0][:content])
+    end
+
+    it "replaces an escaped space with a non-breaking space" do
+      node = parse_single("This\\ space.", :paragraph, 1)
+      assert_equal("This\u00a0space.", node.children[0][:content])
+    end
+
+    it "replaces an escaped backslash with a backslash" do
+      node = parse_single("This\\\\ space.", :paragraph, 1)
+      assert_equal("This\\ space.", node.children[0][:content])
+    end
+  end
 end
