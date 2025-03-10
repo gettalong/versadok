@@ -66,7 +66,7 @@ describe VersaDok::Parser::Stack do
   end
 
   describe "close_node" do
-    it "closes the  given node" do
+    it "closes the given node" do
       @stack.append_child(node(:paragraph))
       @stack.append_child(node(:strong))
       @stack.append_child(node(:text, properties: {content: 'test'}), container: false)
@@ -116,6 +116,18 @@ describe VersaDok::Parser::Stack do
       @stack.close_node(@stack.node_index(:strong))
       assert_equal(:paragraph, @stack.container.type)
       assert_equal('_', @stack.container.children[0].children[0][:content])
+    end
+
+    it "works for inline nodes without a marker property" do
+      @stack.append_child(node(:paragraph))
+      @stack.append_child(node(:strong))
+      @stack.append_child(node(:emphasis))
+      @stack.close_node(@stack.node_index(:strong))
+
+      @stack.append_child(node(:strong))
+      @stack.append_child(node(:text, properties: {content: +'emph'}), container: false)
+      @stack.append_child(node(:emphasis))
+      @stack.close_node(@stack.node_index(:strong))
     end
   end
 

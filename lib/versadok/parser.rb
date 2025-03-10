@@ -67,9 +67,9 @@ module VersaDok
           children = @stack[i - 1].children
           node = children.delete_at(-1)
           if children.last&.type == :text
-            children.last[:content] << node[:marker]
+            children.last[:content] << node[:marker].to_s
           else
-            children << Node.new(:text, properties: {content: +node[:marker]})
+            children << Node.new(:text, properties: {content: +node[:marker].to_s})
           end
           if node.children.first&.type == :text
             children.last[:content] << node.children.first[:content]
