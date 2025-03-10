@@ -269,8 +269,8 @@ module VersaDok
     end
 
     INLINE_RE = /(?=
-                   [*_](?=(.|#{EOL_RE_STR}))  # Match strong and emphasis
-                   |#{EOL_RE_STR})
+                   [*_](?=.|#{EOL_RE_STR})    # Match strong and emphasis
+                   |#{EOL_RE_STR})            # Match end of line
                 /ox
 
     WHITESPACE_LUT = {9 => true, 10 => true, 11 => true, 13 => true, 32 => true, nil => true}
@@ -288,9 +288,13 @@ module VersaDok
         last_byte = @scanner.string.getbyte(@scanner.pos - 1) if @scanner.pos > 0
         case @scanner.peek_byte
         when 42 # *
-          parse_inline_simple(:strong, '*', !@scanner[1].match?(/\s/), !WHITESPACE_LUT[last_byte])
+          @scanner.scan_byte
+          parse_inline_simple(:strong, '*', !WHITESPACE_LUT[@scanner.peek_byte],
+                              !WHITESPACE_LUT[last_byte])
         when 95 # _
-          parse_inline_simple(:emphasis, '_', !@scanner[1].match?(/\s/), !WHITESPACE_LUT[last_byte])
+          @scanner.scan_byte
+          parse_inline_simple(:emphasis, '_', !WHITESPACE_LUT[@scanner.peek_byte],
+                              !WHITESPACE_LUT[last_byte])
         when 10, 13 # \n \r
           @scanner.scan_byte if @scanner.scan_byte == 13 && @scanner.peek_byte == 10
           break
@@ -300,7 +304,6 @@ module VersaDok
     end
 
     def parse_inline_simple(type, marker, is_opening, is_closing)
-      @scanner.scan_byte
       if (index = @stack.node_index(type))
         if is_closing
           @stack.close_node(index)
