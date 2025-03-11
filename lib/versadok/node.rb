@@ -38,6 +38,8 @@ module VersaDok
       paragraph: :block,
       strong: :inline,
       emphasis: :inline,
+      subscript: :inline,
+      superscript: :inline,
       text: :inline,
     }
 

@@ -222,3 +222,13 @@ preceeded by whitespace.
 ::example:
   This* is not a strong* element.
   And *neither is this *here.
+
+
+### Superscript and subscript
+
+Marking up text as superscript with the '^' character or as subscript with the '~' works exactly
+like strong and emphasis.
+
+::example:
+  The following is ^higher^ than usual,
+  while ~this is lower~.

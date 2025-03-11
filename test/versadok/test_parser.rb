@@ -578,6 +578,16 @@ describe VersaDok::Parser do
       assert_equal(:emphasis, node.children[0].type)
     end
 
+    it "works for content marked-up with subscript" do
+      node = parse_single("~home~", :paragraph, 1)
+      assert_equal(:subscript, node.children[0].type)
+    end
+
+    it "works for content marked-up with superscript" do
+      node = parse_single("^home^", :paragraph, 1)
+      assert_equal(:superscript, node.children[0].type)
+    end
+
     it "works inside of words" do
       node = parse_single("a*test*b", :paragraph, 3)
       assert_equal(:strong, node.children[1].type)
@@ -628,8 +638,8 @@ describe VersaDok::Parser do
 
   describe "parse_backslash_escape" do
     it "handles the marker characters for inline markup" do
-      node = parse_single("This \\*is _not\\_ marked* up.", :paragraph, 1)
-      assert_equal('This *is _not_ marked* up.', node.children[0][:content])
+      node = parse_single("T~his\\~ \\*is _not\\_ m\\^ark^ed* up.", :paragraph, 1)
+      assert_equal('T~his~ *is _not_ m^ark^ed* up.', node.children[0][:content])
     end
 
     it "replaces an escaped space with a non-breaking space" do

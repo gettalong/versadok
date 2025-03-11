@@ -272,12 +272,24 @@ module VersaDok
     end
 
     INLINE_RE = /(?=
-                   \\(?<backslash>[*_ \\])     # Match backslash escapes
-                   |[*_](?=.|#{EOL_RE_STR})    # Match strong and emphasis
+                   \\(?<backslash>[*_~^ \\])   # Match backslash escapes
+                   |[*_~^](?=.|#{EOL_RE_STR})  # Match strong, emphasis, subscript, superscript
                    |#{EOL_RE_STR})             # Match end of line
                 /ox
 
     WHITESPACE_LUT = {9 => true, 10 => true, 11 => true, 13 => true, 32 => true, nil => true}
+    SIMPLE_INLINE_NAME_MAP = {
+      42  => :strong,
+      95  => :emphasis,
+      126 => :subscript,
+      94  => :superscript,
+    }
+    SIMPLE_INLINE_CHAR_MAP = {
+      42  => '*',
+      95  => '_',
+      126 => '~',
+      94  => '^',
+    }
 
     def parse_continuation_line
       if (@stack.block_boundary? || @stack[-1].type == :extension_block) &&
@@ -290,15 +302,11 @@ module VersaDok
       while !@scanner.eos? && (text = @scanner.scan_until(INLINE_RE))
         add_text(text) unless text.empty?
         last_byte = @scanner.string.getbyte(@scanner.pos - 1) if @scanner.pos > 0
-        case @scanner.peek_byte
-        when 42 # *
+        case (byte = @scanner.peek_byte)
+        when 42, 95, 126, 94 # * _ ~ ^
           @scanner.scan_byte
-          parse_inline_simple(:strong, '*', !WHITESPACE_LUT[@scanner.peek_byte],
-                              !WHITESPACE_LUT[last_byte])
-        when 95 # _
-          @scanner.scan_byte
-          parse_inline_simple(:emphasis, '_', !WHITESPACE_LUT[@scanner.peek_byte],
-                              !WHITESPACE_LUT[last_byte])
+          parse_inline_simple(SIMPLE_INLINE_NAME_MAP[byte], SIMPLE_INLINE_CHAR_MAP[byte],
+                              !WHITESPACE_LUT[@scanner.peek_byte], !WHITESPACE_LUT[last_byte])
         when 92 # \
           parse_backslash_escape(@scanner[:backslash])
         when 10, 13 # \n \r
