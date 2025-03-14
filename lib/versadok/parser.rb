@@ -119,6 +119,7 @@ module VersaDok
       @scanner = StringScanner.new(''.b)
       @stack = Stack.new(Node.new(:root))
       @extensions = Hash.new(Extension.new)
+      @attribute_list = nil
       @line_no = 1
     end
 
@@ -159,6 +160,8 @@ module VersaDok
         parse_list_item(byte)
       when 58 # :
         parse_extension_block
+      when 123 # {
+        parse_attribute_list
       when 13, 10, nil # \r \n EOS
         byte = @scanner.scan_byte
         @scanner.scan_byte if byte == 13 && @scanner.peek_byte == 10
@@ -166,6 +169,7 @@ module VersaDok
         unless @stack.last_child&.type == :blank
           @stack.append_child(BLANK_NODE, container: false)
         end
+        @attribute_list = nil
         @line_no += 1
       else
         parse_continuation_line
@@ -176,7 +180,7 @@ module VersaDok
       if @scanner.scan(/\#{1,6} /)
         level = @scanner.matched_size - 1
         if @stack.block_boundary?
-          @stack.append_child(Node.new(:header, properties: {level: level}))
+          @stack.append_child(block_node(:header, properties: {level: level}))
         elsif @stack.last_child.type != :header || @stack.last_child[:level] != level
           @scanner.unscan
         end
@@ -192,7 +196,7 @@ module VersaDok
           parse_line
         elsif @stack.block_boundary?
           @scanner.pos += 2
-          @stack.append_child(Node.new(:blockquote))
+          @stack.append_child(block_node(:blockquote))
           parse_line
         else
           parse_continuation_line
@@ -205,6 +209,7 @@ module VersaDok
           unless @stack.last_child.type == :blank
             @stack.append_child(BLANK_NODE, container: false)
           end
+          @attribute_list = nil
         else
           parse_continuation_line
         end
@@ -231,7 +236,7 @@ module VersaDok
         elsif @stack.block_boundary?
           properties = {indent: 0, marker: marker}
           properties[:start] = @scanner[1].to_i if marker == :decimal
-          @stack.append_child(Node.new(:list, properties: properties))
+          @stack.append_child(block_node(:list, properties: properties))
         else
           parse_continuation_line
           return
@@ -249,7 +254,7 @@ module VersaDok
         name = @scanner[1]
         extension = @extensions[name]
         @scanner.pos += @scanner.matched_size
-        attrs = parse_attribute_list(@scanner.scan_until(/#{EOL_RE_STR}/o))
+        attrs = parse_attribute_list_content(@scanner.scan_until(/#{EOL_RE_STR}/o), @attribute_list || {})
         parse_content = extension.parse_content?
 
         indent = @current_indent + 1
@@ -266,6 +271,14 @@ module VersaDok
           end
           extension.parsing_finished!
         end
+      else
+        parse_continuation_line
+      end
+    end
+
+    def parse_attribute_list
+      if @scanner.scan(/\{(#{AL_ANY_CHARS}+)\}[ \t\v]*(?:#{EOL_RE_STR})/o) && @stack.block_boundary?
+        parse_attribute_list_content(@scanner[1], @attribute_list ||= {})
       else
         parse_continuation_line
       end
@@ -294,7 +307,7 @@ module VersaDok
     def parse_continuation_line
       if (@stack.block_boundary? || @stack[-1].type == :extension_block) &&
          @stack.container.content_model == :block
-        @stack.append_child(Node.new(:paragraph))
+        @stack.append_child(block_node(:paragraph))
       end
 
       @stack.reset_level(-1)
@@ -340,6 +353,15 @@ module VersaDok
       end
     end
 
+    def block_node(type, attributes: @attribute_list, properties: nil)
+      if attributes && (refs = attributes.delete(:refs))
+        properties ||= {}
+        (properties[:refs] ||= []).concat(refs)
+      end
+      @attribute_list = nil
+      Node.new(type, attributes: attributes, properties: properties)
+    end
+
     def add_text(text)
       if @stack.last_child&.type == :text
         @stack.last_child[:content] << text
@@ -361,8 +383,7 @@ module VersaDok
       nil => /\\(\})/,
     }
 
-    def parse_attribute_list(str)
-      attrs = {}
+    def parse_attribute_list_content(str, attrs = {})
       str.strip!
       return attrs if str.empty?
 
