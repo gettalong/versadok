@@ -59,6 +59,14 @@ describe VersaDok::Parser::Stack do
       assert_equal(2, @stack.node_index(:strong))
     end
 
+    it "stops searching at elements containing verbatim content" do
+      @stack.append_child(node(:strong))
+      @stack.append_child(node(:verbatim))
+      @stack.append_child(node(:other))
+      assert_nil(@stack.node_index(:strong))
+      assert_equal(2, @stack.node_index(:verbatim))
+    end
+
     it "returns nil if no node with the given type exists" do
       @stack.append_child(node(:other))
       assert_nil(@stack.node_index(:strong))
@@ -138,6 +146,16 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:text, properties: {content: +'emph'}), container: false)
       @stack.append_child(node(:emphasis))
       @stack.close_node(@stack.node_index(:strong))
+    end
+  end
+
+  describe "each_inline_verbatim" do
+    it "iterates over all inline verbatim elements in reverse order" do
+      @stack.append_child(node(:container, properties: {content_model: :verbatim}))
+      @stack.append_child(node(:paragraph))
+      @stack.append_child(n1 = node(:verbatim))
+      @stack.append_child(n2 = node(:other, properties: {content_model: :verbatim, category: :inline}))
+      assert_equal([n2, n1], @stack.each_inline_verbatim.to_a)
     end
   end
 
@@ -666,8 +684,8 @@ describe VersaDok::Parser do
 
   describe "parse_backslash_escape" do
     it "handles the marker characters for inline markup" do
-      node = parse_single("T~his\\~ \\*is _not\\_ m\\^ark^ed* up.", :paragraph, 1)
-      assert_equal('T~his~ *is _not_ m^ark^ed* up.', node.children[0][:content])
+      node = parse_single("T~his\\~ \\*is _not\\_ m\\^ark^ed* \\`up`.", :paragraph, 1)
+      assert_equal('T~his~ *is _not_ m^ark^ed* `up`.', node.children[0][:content])
     end
 
     it "replaces an escaped space with a non-breaking space" do
@@ -678,6 +696,52 @@ describe VersaDok::Parser do
     it "replaces an escaped backslash with a backslash" do
       node = parse_single("This\\\\ space.", :paragraph, 1)
       assert_equal("This\\ space.", node.children[0][:content])
+    end
+  end
+
+  describe "parse_verbatim" do
+    it "works on a single line" do
+      node = parse_single("Some `text` here", :paragraph, 3)
+      assert_equal("Some ", node.children[0][:content])
+      assert_equal(:verbatim, node.children[1].type)
+      assert_equal([], node.children[1].children)
+      assert_equal("text", node.children[1][:content])
+      assert_equal(" here", node.children[2][:content])
+    end
+
+    it "works on a single line with unclosed node" do
+      node = parse_single("Some `text here", :paragraph, 1)
+      assert_equal("Some `text here", node.children[0][:content])
+    end
+
+    it "works on a single line containing inline-like markup" do
+      node = parse_single("May *s `t* *data*` z", :paragraph, 3)
+      assert_equal("May *s ", node.children[0][:content])
+      assert_equal(:verbatim, node.children[1].type)
+      assert_equal([], node.children[1].children)
+      assert_equal("t* *data*", node.children[1][:content])
+      assert_equal(" z", node.children[2][:content])
+    end
+
+    it "works on a single line containing inline-like markup with unclosed node" do
+      node = parse_single("May *s `t* *data* z", :paragraph, 3)
+      assert_equal("May *s `t* ", node.children[0][:content])
+      assert_equal(:strong, node.children[1].type)
+      assert_equal(" z", node.children[2][:content])
+    end
+
+    it "works on multiple lines" do
+      node = parse_single("Some `text *here\n  cont*inuing` here", :paragraph, 3)
+      assert_equal(:verbatim, node.children[1].type)
+      assert_equal([], node.children[1].children)
+      assert_equal("text *here\ncont*inuing", node.children[1][:content])
+    end
+
+    it "works on multiple lines with unclosed node" do
+      node = parse_single("Some `text *here\n  cont*inuing here", :paragraph, 3)
+      assert_equal("Some `text ", node.children[0][:content])
+      assert_equal(:strong, node.children[1].type)
+      assert_equal("here cont", node.children[1].children[0][:content])
     end
   end
 end

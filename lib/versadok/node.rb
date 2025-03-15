@@ -41,6 +41,7 @@ module VersaDok
       subscript: :inline,
       superscript: :inline,
       text: :inline,
+      verbatim: :inline,
     }
 
     CONTENT_MODEL_MAP = { #:nodoc:
@@ -54,6 +55,7 @@ module VersaDok
       subscript: :inline,
       superscript: :inline,
       text: :none,
+      verbatim: :verbatim,
     }
 
     attr_accessor :type
