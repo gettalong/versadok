@@ -47,8 +47,8 @@ module VersaDok
       root: :block,
       blockquote: :block,
       list_item: :block,
-      header: :span,
-      paragraph: :span,
+      header: :inline,
+      paragraph: :inline,
     }
 
     attr_accessor :type
