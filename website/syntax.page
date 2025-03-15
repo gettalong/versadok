@@ -179,6 +179,49 @@ before they are passed to the extension.
          The 3 leading spaces are preserved.
 
 
+### Attribute list
+
+A line starting with a '{' character followed by a list of attributes, a '}' character, optional
+whitespace and the end of the line defines an attribute list. If it is not directly followed by
+another attribute list or a block element, it is discarded. Multiple attribute lists are combined.
+
+::example:
+  {#an-id .with-two .classes}
+  paragraph
+
+The attributes can be specified in the following ways (an attribute name can consist of any
+character except whitespace, the '#' or '.' or '}' characters):
+
+* A '#' character followed by an attribute name defines an identifier stored within the 'id'
+  key. The last occurence wins. This is a shortcut for a key-value pair with an 'id' key.
+
+  ::example:
+    {#some-id-here}
+    paragraph
+
+* A '.' character followed by an attribute name defines a class name stored within the 'class'
+  key. Multiple occurences will be combined using spaces.
+
+  ::example:
+     {.class1 .another-class}
+     paragraph
+
+* An attribute name followed by a '=' character and a value defines a key-value pair. The value can
+  optionally be single or double quoted in which case it may contain whitespace. Any character
+  except an unescaped '}' character can be included in the value. If multiple key-value pairs with
+  the same key are specified, the last one wins.
+
+  ::example:
+    {key="quo\}ted" another='single quoted' and=bare}
+    paragraph
+
+* All other occurences of whitespace delimited character sequences are references.
+
+  ::example:
+    {everything here is just a reference}
+    paragraph
+
+
 ## Inline Markup
 
 ### Literal text
