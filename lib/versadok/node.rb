@@ -49,6 +49,11 @@ module VersaDok
       list_item: :block,
       header: :inline,
       paragraph: :inline,
+      strong: :inline,
+      emphasis: :inline,
+      subscript: :inline,
+      superscript: :inline,
+      text: :none,
     }
 
     attr_accessor :type
