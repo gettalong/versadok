@@ -1,5 +1,20 @@
 ## General
 
+### Goals
+
+The VersaDok syntax is chosen so that the following goals are achieved:
+
+1. Content should be parse-able line by line. This means that the identification of the type of a
+   line may not depend on future lines.
+
+2. Block elements should be uniquely defined by the first few characters of the line.
+
+3. Superfluous leading whitespace should not matter. This means everything can be indented (or not)
+   without a change in meaning.
+
+4. Backtracking should not be needed. This avoids performance and security problems.
+
+
 ### Line breaks
 
 The following are all recognized as a single line break: CR, LF and CR directly followed by LF.
@@ -24,6 +39,14 @@ Any line that does not start one of the other block elements starts a paragraph.
 
   >Here a space is missing after '>', and it is
   therefore also a paragraph.
+
+Whitespace is allowed before a paragraph:
+
+::example:
+  Paragraph starts at the left boundary.
+
+     This one is indented.
+        And some more leading whitespace.
 
 
 ### Header
@@ -169,14 +192,22 @@ Depending on the extension the content is either parsed as block level elements 
 processed by the extension.
 
 When processed by the extension the indentation needs to be two whitespace characters. This value
-can be overridden by using the attribute 'indent'. Then indentation is stripped from the lines
-before they are passed to the extension.
+can be overridden by using the attribute 'indent'. The indentation is stripped from the lines before
+they are passed to the extension.
 
 ::example:
   ::extname: indent=4
       All content needs to be indented 4 whitespace
       characters.
          The 3 leading spaces are preserved.
+
+Whitespace is allowed before an extension block:
+
+::example:
+  Paragraph
+
+     ::extname:
+       This is the content.
 
 
 ### Attribute list
@@ -223,6 +254,28 @@ character except whitespace, the '#' or '.' or '}' characters):
 
 
 ## Inline Markup
+
+### Precedence
+
+Most inline elements are defined via opening and closing markers. Sometimes those markers may not be
+properly nested. In such a case the first closing marker takes precedence and the markers of all
+unclosed elements after the first matching opening marker are treated as literal text.
+
+::example:
+  _Here _is *emphasized_ text*.
+
+Note that in the above example the second '_' is treated as literal text because at this point an
+emphasis element is already open.
+
+There is one exception to this rule: The start of an unclosed element with verbatim content is a
+hard boundary for determining matching markers.
+
+::example:
+  This *is not `strong*.
+
+In the above example the '\`' character would start a verbatim element. Therefore it acts as a hard
+boundary across which the second '*' won't match.
+
 
 ### Literal text
 
