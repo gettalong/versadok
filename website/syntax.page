@@ -275,3 +275,15 @@ like strong and emphasis.
 ::example:
   The following is ^higher^ than usual,
   while ~this is lower~.
+
+
+### Verbatim
+
+The verbatim element preserves content exactly as written. It starts with a '\`' character and ends
+with one.
+
+::example:
+  The following `is *taken* exactly
+  as it` is.
+
+As the content is verbatim text backslash escapes don't work.
