@@ -296,7 +296,7 @@ module VersaDok
     end
 
     INLINE_RE = /(?=
-                   \\(?<backslash>[*_~^` \\])  # Match backslash escapes
+                   \\[*_~^` \\]                # Match backslash escapes
                    |[*_~^](?=.|#{EOL_RE_STR})  # Match strong, emphasis, subscript, superscript
                    |`                          # Match verbatim
                    |#{EOL_RE_STR})             # Match end of line
@@ -328,18 +328,17 @@ module VersaDok
       add_text(' ') if @stack.last_child&.category == :inline
       while !@scanner.eos? && (text = @scanner.scan_until(INLINE_RE))
         add_text(text) unless text.empty?
-        last_byte = @scanner.string.getbyte(@scanner.pos - 1) if @scanner.pos > 0
-        case (byte = @scanner.peek_byte)
+        case (byte = @scanner.scan_byte)
         when 42, 95, 126, 94 # * _ ~ ^
-          @scanner.scan_byte
+          last_byte = @scanner.string.getbyte(@scanner.pos - 2) if @scanner.pos > 1
           parse_inline_simple(SIMPLE_INLINE_NAME_MAP[byte], SIMPLE_INLINE_CHAR_MAP[byte],
                               !WHITESPACE_LUT[@scanner.peek_byte], !WHITESPACE_LUT[last_byte])
         when 92 # \
-          parse_backslash_escape(@scanner[:backslash])
+          parse_backslash_escape
         when 96 # `
           parse_verbatim(start_of_line)
         when 10, 13 # \n \r
-          @scanner.scan_byte if @scanner.scan_byte == 13 && @scanner.peek_byte == 10
+          @scanner.scan_byte if byte == 13 && @scanner.peek_byte == 10
           break
         end
       end
@@ -367,13 +366,11 @@ module VersaDok
       end
     end
 
-    def parse_backslash_escape(char)
-      @scanner.pos += 2
-      if char == ' '
-        add_text("\u00A0")
-      else
-        add_text(char)
-      end
+    BACKSLASH_ESCAPE_MAP = Hash.new {|h, k| h[k] = k.chr }
+    BACKSLASH_ESCAPE_MAP[32] = "\u00A0"
+
+    def parse_backslash_escape
+      add_text(BACKSLASH_ESCAPE_MAP[@scanner.scan_byte])
     end
 
     def parse_verbatim(start_of_line)
@@ -382,12 +379,11 @@ module VersaDok
         node.children.clear
         @stack.close_node(index)
         start_pos = node[:pos] || start_of_line
-        node[:content] << @scanner.string.byteslice(start_pos, @scanner.pos - start_pos)
+        node[:content] << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
       else
         @stack.append_child(Node.new(:verbatim, properties: {marker: '`', content: +'',
-                                                             pos: @scanner.pos + 1}))
+                                                             pos: @scanner.pos}))
       end
-      @scanner.scan_byte
     end
 
     def block_node(type, attributes: @attribute_list, properties: nil)
