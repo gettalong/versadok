@@ -274,7 +274,8 @@ hard boundary for determining matching markers.
   This *is not `strong*.
 
 In the above example the '\`' character would start a verbatim element. Therefore it acts as a hard
-boundary across which the second '*' won't match.
+boundary across which the second '*' won't match. Besides the verbatim element this is also true for
+the second part (the destination or reference) of a link.
 
 
 ### Literal text
@@ -340,3 +341,25 @@ with one.
   as it` is.
 
 As the content is verbatim text backslash escapes don't work.
+
+
+### Link
+
+A link consists of two parts: The content of the link followed by either the destination or the
+reference.
+
+The link content starts with a '[' character, followed by the content itself and a ']'
+character. The closing bracket must be directly followed without any intervening whitespace by the
+'(' or '[' character, the destination or reference, and the closing ')' or ']' character.
+
+::example:
+  This is [an inline link](destination.html)
+  and [this a reference one][ref].
+
+The destination and reference are both treated as verbatim text. If there is a line break all
+whitespace before the line break as well as the line break itself are removed.
+
+::example:
+  This is [a link with](a linebreak
+  in the destination).
+
