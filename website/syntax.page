@@ -258,14 +258,16 @@ character except whitespace, the '#' or '.' or '}' characters):
 ### Precedence
 
 Most inline elements are defined via opening and closing markers. Sometimes those markers may not be
-properly nested. In such a case the first closing marker takes precedence and the markers of all
-unclosed elements after the first matching opening marker are treated as literal text.
+properly nested or may match multiple opening markers. In such a case the closest opening marker
+takes precedence and the markers of all unclosed elements after the matching opening marker are
+treated as literal text.
 
 ::example:
-  _Here _is *emphasized_ text*.
+  _Not here _but here is *emphasized_ text*.
 
-Note that in the above example the second '_' is treated as literal text because at this point an
-emphasis element is already open.
+Note that in the above example the first '\_' as well as both '\*' are treated as literal text: The
+'\_' because it is farther away from the closing marker and the '\*' because the emphasis ensures
+that the first '\*' can't start a strong element (which would overlap the emphasis one).
 
 There is one exception to this rule: The start of an unclosed element with verbatim content is a
 hard boundary for determining matching markers.

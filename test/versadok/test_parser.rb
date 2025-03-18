@@ -677,12 +677,13 @@ describe VersaDok::Parser do
       assert_equal("a * b*", node.children[0][:content])
     end
 
-    it "doesn't allow nesting same-type elements" do
-      node = parse_single("a*test *b* test*", :paragraph, 3)
+    it "allows nesting of same-type elements" do
+      node = parse_single("a*test *b* test*", :paragraph, 2)
       assert_equal(:strong, node.children[1].type)
       assert_equal("a", node.children[0][:content])
-      assert_equal("test *b", node.children[1].children[0][:content])
-      assert_equal(" test*", node.children[2][:content])
+      assert_equal("test ", node.children[1].children[0][:content])
+      assert_equal(:strong, node.children[1].children[1].type)
+      assert_equal(" test", node.children[1].children[2][:content])
     end
 
     it "works directly before continuation lines borders" do

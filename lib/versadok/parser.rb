@@ -372,12 +372,8 @@ module VersaDok
     end
 
     def parse_inline_simple(type, marker, is_opening, is_closing)
-      if (index = @stack.node_index(type))
-        if is_closing
-          @stack.close_node(index)
-        else
-          add_text(marker)
-        end
+      if (index = @stack.node_index(type)) && is_closing
+        @stack.close_node(index)
       elsif is_opening
         @stack.append_child(Node.new(type, properties: {marker: marker}))
       else
