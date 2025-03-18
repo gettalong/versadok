@@ -38,6 +38,12 @@ describe VersaDok::Node do
     assert_equal(:value, @node[:test])
   end
 
+  it "sets the value of a property with #[]=" do
+    assert_nil(@node.properties)
+    @node[:test] = :value
+    assert_equal(:value, @node.properties[:test])
+  end
+
   it "can append child nodes with #<<" do
     @node << node(:child)
     assert_equal([:child], @node.children.map(&:type))

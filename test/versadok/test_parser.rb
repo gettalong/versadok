@@ -64,7 +64,14 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:verbatim))
       @stack.append_child(node(:other))
       assert_nil(@stack.node_index(:strong))
-      assert_equal(2, @stack.node_index(:verbatim))
+    end
+
+    it "returns the top verbatim element if searched for" do
+      @stack.append_child(node(:verbatim))
+      @stack.append_child(node(:custom, properties: {content_model: :verbatim}))
+      @stack.append_child(node(:other))
+      assert_equal(2, @stack.node_index(:custom))
+      assert_nil(@stack.node_index(:verbatim))
     end
 
     it "returns nil if no node with the given type exists" do
@@ -146,6 +153,25 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:text, properties: {content: +'emph'}), container: false)
       @stack.append_child(node(:emphasis))
       @stack.close_node(@stack.node_index(:strong))
+    end
+  end
+
+  describe "remove_node" do
+    it "removes the node from the stack and its parent" do
+      @stack.append_child(node(:paragraph))
+      @stack.append_child(node(:text), container: false)
+      @stack.append_child(node(:link))
+      @stack.append_child(node(:text), container: false)
+      @stack.append_child(node(:strong))
+      @stack.append_child(node(:text), container: false)
+      @stack.append_child(node(:emphasis))
+      node = @stack.remove_node(3)
+      assert_equal(:strong, node.type)
+      assert_equal(1, @stack[2].children.size)
+      assert_equal(:text, @stack[2].children[0].type)
+      assert_same(@stack[2], @stack.container)
+      @stack.reset_level(-1)
+      assert_same(@stack[2], @stack.container)
     end
   end
 
@@ -683,9 +709,14 @@ describe VersaDok::Parser do
   end
 
   describe "parse_backslash_escape" do
-    it "handles the marker characters for inline markup" do
+    it "handles the marker characters for simple inline markup" do
       node = parse_single("T~his\\~ \\*is _not\\_ m\\^ark^ed* \\`up`.", :paragraph, 1)
       assert_equal('T~his~ *is _not_ m^ark^ed* `up`.', node.children[0][:content])
+    end
+
+    it "handles the marker characters for links" do
+      node = parse_single("This \\[ is\\] not\\( a \\)drill", :paragraph, 1)
+      assert_equal('This [ is] not( a )drill', node.children[0][:content])
     end
 
     it "replaces an escaped space with a non-breaking space" do
@@ -742,6 +773,83 @@ describe VersaDok::Parser do
       assert_equal("Some `text ", node.children[0][:content])
       assert_equal(:strong, node.children[1].type)
       assert_equal("here cont", node.children[1].children[0][:content])
+    end
+  end
+
+  describe "link" do
+    it "works if the link content is across lines" do
+      node = parse_single("Some [link\n  content](here) comes", :paragraph, 3)
+      assert_equal(:link, node.children[1].type)
+      assert_equal("link content", node.children[1].children[0][:content])
+    end
+
+    it "ignores right brackets that don't close the link content" do
+      node = parse_single("Some [link] content](here) comes", :paragraph, 3)
+      assert_equal(:link, node.children[1].type)
+      assert_equal("link] content", node.children[1].children[0][:content])
+    end
+
+    it "ignores right parentheses that don't close the inline link part" do
+      node = parse_single("Some here) comes", :paragraph, 1)
+      assert_equal("Some here) comes", node.children[0][:content])
+    end
+
+    it "ignores the link if another inline markup closes within the link content" do
+      node = parse_single("some *strong [argument*](here)", :paragraph, 3)
+      assert_equal(:text, node.children[0].type)
+      assert_equal(:strong, node.children[1].type)
+      assert_equal(:text, node.children[2].type)
+      assert_equal("strong [argument", node.children[1].children[0][:content])
+    end
+
+    describe "inline" do
+      it "works in the simple case" do
+        node = parse_single("Some [link](here) comes", :paragraph, 3)
+        assert_equal(:link, node.children[1].type)
+        assert_equal("here", node.children[1][:destination])
+        assert_equal("link", node.children[1].children[0][:content])
+      end
+
+      it "works if the inline link is across lines" do
+        node = parse_single("Some [link](here   \n   links) comes", :paragraph, 3)
+        assert_equal(:link, node.children[1].type)
+        assert_equal("herelinks", node.children[1][:destination])
+      end
+
+      it "handles a missing closing parentheses" do
+        node = parse_single("Some [link](here comes", :paragraph, 1)
+        assert_equal("Some [link](here comes", node.children[0][:content])
+      end
+
+      it "prevents inline markup closing across the ]( border (like with verbatim)" do
+        node = parse_single("Some [*link](here*", :paragraph, 1)
+        assert_equal("Some [*link](here*", node.children[0][:content])
+      end
+    end
+
+    describe "reference" do
+      it "works in the simple case" do
+        node = parse_single("Some [link][here] comes", :paragraph, 3)
+        assert_equal(:link, node.children[1].type)
+        assert_equal("here", node.children[1][:reference])
+        assert_equal("link", node.children[1].children[0][:content])
+      end
+
+      it "works if the reference link name is across lines" do
+        node = parse_single("Some [link][here  \n   ref] comes", :paragraph, 3)
+        assert_equal(:link, node.children[1].type)
+        assert_equal("hereref", node.children[1][:reference])
+      end
+
+      it "handles a missing closing parentheses" do
+        node = parse_single("Some [link][here comes", :paragraph, 1)
+        assert_equal("Some [link][here comes", node.children[0][:content])
+      end
+
+      it "prevents inline markup closing across the ][ border (like with verbatim)" do
+        node = parse_single("Some [*link][here*", :paragraph, 1)
+        assert_equal("Some [*link][here*", node.children[0][:content])
+      end
     end
   end
 end

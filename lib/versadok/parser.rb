@@ -59,7 +59,7 @@ module VersaDok
 
       def node_index(type)
         @stack.rindex do |n|
-          break if type != :verbatim && n.content_model == :verbatim
+          break if type != n.type && n.content_model == :verbatim
           n.type == type
         end
       end
@@ -83,6 +83,14 @@ module VersaDok
         end
         @stack.pop(@stack.size - index)
         @level = index - 1
+      end
+
+      def remove_node(index)
+        node = @stack[index]
+        @stack[index - 1].children.delete(node)
+        @stack.pop(@stack.size - index)
+        @level = index - 1
+        node
       end
 
       def each_inline_verbatim
@@ -296,10 +304,9 @@ module VersaDok
     end
 
     INLINE_RE = /(?=
-                   \\[*_~^` \\]                # Match backslash escapes
-                   |[*_~^](?=.|#{EOL_RE_STR})  # Match strong, emphasis, subscript, superscript
-                   |`                          # Match verbatim
-                   |#{EOL_RE_STR})             # Match end of line
+                   \\[*_~^`\[\]\(\) \\]   # Match backslash escapes
+                   |[*_~^`\[\]\)]         # Match inline element start
+                   |#{EOL_RE_STR})        # Match end of line
                 /ox
 
     WHITESPACE_LUT = {9 => true, 10 => true, 11 => true, 13 => true, 32 => true, nil => true}
@@ -337,6 +344,18 @@ module VersaDok
           parse_backslash_escape
         when 96 # `
           parse_verbatim(start_of_line)
+        when 91 # [
+          parse_link_opened
+        when 93 # ]
+          case (byte = @scanner.scan_byte)
+          when 40, 91 # (
+            parse_link_data_opened(byte)
+          else
+            @scanner.unscan
+            parse_link_data_closed(:reference, start_of_line)
+          end
+        when 41 # )
+          parse_link_data_closed(:destination, start_of_line)
         when 10, 13 # \n \r
           @scanner.scan_byte if byte == 13 && @scanner.peek_byte == 10
           break
@@ -383,6 +402,36 @@ module VersaDok
       else
         @stack.append_child(Node.new(:verbatim, properties: {marker: '`', content: +'',
                                                              pos: @scanner.pos}))
+      end
+    end
+
+    def parse_link_opened
+      @stack.append_child(Node.new(:link, properties: {marker: '['}))
+    end
+
+    def parse_link_data_opened(byte)
+      link_type = (byte == 40 ? :destination : :reference)
+      if (index = @stack.node_index(:link))
+        @stack.append_child(Node.new(:link_data, properties: {category: :inline, content: +'',
+                                                              content_model: :verbatim, marker: '',
+                                                              link_type: link_type,
+                                                              pos: @scanner.pos}))
+      end
+      add_text(link_type == :destination ? '](' : '][')
+    end
+
+    def parse_link_data_closed(type, start_of_line)
+      if (index = @stack.node_index(:link_data)) && @stack[index][:link_type] == type
+        link_data_node = @stack.remove_node(index)
+        start_pos = link_data_node[:pos] || start_of_line
+        link_data_node[:content] << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
+        link_data_node[:content].gsub!(/\s*(?:#{EOL_RE_STR})/, "")
+
+        index = @stack.node_index(:link)
+        @stack[index][type] = link_data_node[:content]
+        @stack.close_node(index)
+      else
+        add_text(type == :destination ? ')' : ']')
       end
     end
 

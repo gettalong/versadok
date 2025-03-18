@@ -42,6 +42,7 @@ module VersaDok
       superscript: :inline,
       text: :inline,
       verbatim: :inline,
+      link: :inline,
     }
 
     CONTENT_MODEL_MAP = { #:nodoc:
@@ -56,6 +57,7 @@ module VersaDok
       superscript: :inline,
       text: :none,
       verbatim: :verbatim,
+      link: :inline,
     }
 
     attr_accessor :type
@@ -83,6 +85,10 @@ module VersaDok
 
     def [](key)
       properties && properties[key]
+    end
+
+    def []=(key, value)
+      (@properties ||= {})[key] = value
     end
 
     def <<(node)
