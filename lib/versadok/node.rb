@@ -61,11 +61,13 @@ module VersaDok
     }
 
     attr_accessor :type
+    attr_accessor :content
     attr_accessor :attributes
     attr_accessor :properties
 
-    def initialize(type, attributes: nil, properties: nil)
+    def initialize(type, content: nil, attributes: nil, properties: nil)
       @type = type
+      @content = content
       @attributes = attributes
       @properties = properties
       @children = nil
@@ -97,7 +99,7 @@ module VersaDok
     end
 
     def to_s(indent = 0)
-      str = "#{' ' * indent}#{@type} #{properties&.inspect} " \
+      str = "#{' ' * indent}#{@type} #{content && content.inspect} #{properties&.inspect} " \
             "#{@attributes&.map {|k,v| "#{k}=#{v.inspect}"}&.join(' ')}".rstrip
       str << "\n#{@children.map {|c| c.to_s(indent + 2)}.join("\n")}" unless children.empty?
       str

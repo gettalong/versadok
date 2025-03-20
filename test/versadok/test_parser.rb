@@ -84,7 +84,7 @@ describe VersaDok::Parser::Stack do
     it "closes the given node" do
       @stack.append_child(node(:paragraph))
       @stack.append_child(node(:strong))
-      @stack.append_child(node(:text, properties: {content: 'test'}), container: false)
+      @stack.append_child(node(:text, content: 'test'), container: false)
       @stack.close_node(@stack.node_index(:strong))
       assert_equal(:paragraph, @stack.container.type)
       @stack.reset_level(-1)
@@ -95,7 +95,7 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:first))
       @stack.append_child(node(:second))
       @stack.append_child(node(:strong))
-      @stack.append_child(node(:text, properties: {content: 'test'}), container: false)
+      @stack.append_child(node(:text, content: 'test'), container: false)
       @stack.close_node(@stack.node_index(:first))
       assert_equal(:root, @stack.container.type)
       assert_equal(:second, @stack.container.children[0].children[0].type)
@@ -104,22 +104,22 @@ describe VersaDok::Parser::Stack do
     it "removes unclosed child node with text node before" do
       @stack.append_child(node(:paragraph))
       @stack.append_child(node(:strong))
-      @stack.append_child(node(:text, properties: {content: +'before'}), container: false)
+      @stack.append_child(node(:text, content: +'before'), container: false)
       @stack.append_child(node(:emphasis, properties: {marker: '_'}))
-      @stack.append_child(node(:text, properties: {content: +'emph'}), container: false)
+      @stack.append_child(node(:text, content: +'emph'), container: false)
       @stack.close_node(@stack.node_index(:strong))
       assert_equal(:paragraph, @stack.container.type)
-      assert_equal('before_emph', @stack.container.children[0].children[0][:content])
+      assert_equal('before_emph', @stack.container.children[0].children[0].content)
     end
 
     it "removes unclosed child node with no text node before" do
       @stack.append_child(node(:paragraph))
       @stack.append_child(node(:strong))
       @stack.append_child(node(:emphasis, properties: {marker: '_'}))
-      @stack.append_child(node(:text, properties: {content: +'emph'}), container: false)
+      @stack.append_child(node(:text, content: +'emph'), container: false)
       @stack.close_node(@stack.node_index(:strong))
       assert_equal(:paragraph, @stack.container.type)
-      assert_equal('_emph', @stack.container.children[0].children[0][:content])
+      assert_equal('_emph', @stack.container.children[0].children[0].content)
     end
 
     it "removes unclosed child node with non-text node as first child" do
@@ -127,11 +127,11 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:strong))
       @stack.append_child(node(:emphasis, properties: {marker: '_'}))
       @stack.append_child(node(:nontext, properties: {marker: '+'}))
-      @stack.append_child(node(:text, properties: {content: +'emph'}), container: false)
+      @stack.append_child(node(:text, content: +'emph'), container: false)
       @stack.close_node(@stack.node_index(:nontext))
       @stack.close_node(@stack.node_index(:strong))
       assert_equal(:paragraph, @stack.container.type)
-      assert_equal('_', @stack.container.children[0].children[0][:content])
+      assert_equal('_', @stack.container.children[0].children[0].content)
     end
 
     it "removes unclosed child node with no children" do
@@ -140,7 +140,7 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:emphasis, properties: {marker: '_'}))
       @stack.close_node(@stack.node_index(:strong))
       assert_equal(:paragraph, @stack.container.type)
-      assert_equal('_', @stack.container.children[0].children[0][:content])
+      assert_equal('_', @stack.container.children[0].children[0].content)
     end
 
     it "works for inline nodes without a marker property" do
@@ -150,7 +150,7 @@ describe VersaDok::Parser::Stack do
       @stack.close_node(@stack.node_index(:strong))
 
       @stack.append_child(node(:strong))
-      @stack.append_child(node(:text, properties: {content: +'emph'}), container: false)
+      @stack.append_child(node(:text, content: +'emph'), container: false)
       @stack.append_child(node(:emphasis))
       @stack.close_node(@stack.node_index(:strong))
     end
@@ -286,11 +286,11 @@ describe VersaDok::Parser::Stack do
       n = node(:block, properties: {category: :block})
       @stack.append_child(n)
       @stack.append_child(node(:strong, properties: {marker: '*'}))
-      @stack.append_child(node(:text, properties: {content: 'test'}), container: false)
+      @stack.append_child(node(:text, content: 'test'), container: false)
       @stack.reset_level
       @stack.append_child(node(:blank))
       assert_equal(1, n.children.size)
-      assert_equal('*test', n.children[0][:content])
+      assert_equal('*test', n.children[0].content)
     end
   end
 
@@ -354,7 +354,7 @@ describe VersaDok::Parser do
       it "parses the header level #{level}" do
         header = parse_single("#{'#' * level} header", :header, 1)
         assert_equal(level, header[:level])
-        assert_equal("header", header.children[0][:content])
+        assert_equal("header", header.children[0].content)
       end
     end
 
@@ -373,17 +373,17 @@ describe VersaDok::Parser do
 
     it "parses continuation lines" do
       header = parse_single("# header\ncontin\r\n  ued\r# here\n## and here", :header, 1)
-      assert_equal("header contin ued here ## and here", header.children[0][:content])
+      assert_equal("header contin ued here ## and here", header.children[0].content)
     end
 
     it "ignores the marker if not followed by a space" do
       para = parse_single("#header", :paragraph, 1)
-      assert_equal("#header", para.children[0][:content])
+      assert_equal("#header", para.children[0].content)
     end
 
     it "ignores the marker on a continuation line when not already in a header" do
       para = parse_single("Para\n# header", :paragraph, 1)
-      assert_equal("Para # header", para.children[0][:content])
+      assert_equal("Para # header", para.children[0].content)
     end
   end
 
@@ -391,7 +391,7 @@ describe VersaDok::Parser do
     it "parses a simple blockquote" do
       bq = parse_single("> Test", :blockquote, 1)
       assert_equal(:paragraph, bq.children[0].type)
-      assert_equal("Test", bq.children[0].children[0][:content])
+      assert_equal("Test", bq.children[0].children[0].content)
     end
 
     it "allows whitespace before the marker" do
@@ -400,7 +400,7 @@ describe VersaDok::Parser do
 
     it "handles a line with just the marker and nothing else as paragraph" do
       para = parse_single(">\r>\r\n>\n>", :paragraph, 1)
-      assert_equal("> > > >", para.children[0][:content])
+      assert_equal("> > > >", para.children[0].content)
     end
 
     it "parses lines with the marker and nothing else on the line" do
@@ -408,7 +408,7 @@ describe VersaDok::Parser do
       assert_equal(:paragraph, bq.children[0].type)
       assert_equal(:blank, bq.children[1].type)
       assert_equal(:paragraph, bq.children[2].type)
-      assert_equal("Test2", bq.children[2].children[0][:content])
+      assert_equal("Test2", bq.children[2].children[0].content)
     end
 
     it "handles a mix of markers with no content" do
@@ -419,23 +419,23 @@ describe VersaDok::Parser do
     it "parses continuation lines with the marker" do
       bq = parse_single("> Test\n> other", :blockquote, 1)
       assert_equal(:paragraph, bq.children[0].type)
-      assert_equal("Test other", bq.children[0].children[0][:content])
+      assert_equal("Test other", bq.children[0].children[0].content)
     end
 
     it "parses continuation lines without the marker" do
       bq = parse_single("> Test1\nTest2", :blockquote, 1)
       assert_equal(:paragraph, bq.children[0].type)
-      assert_equal("Test1 Test2", bq.children[0].children[0][:content])
+      assert_equal("Test1 Test2", bq.children[0].children[0].content)
     end
 
     it "ignores markers when not on block boundary" do
       para = parse_single("Para\n> test", :paragraph, 1)
-      assert_equal("Para > test", para.children[0][:content])
+      assert_equal("Para > test", para.children[0].content)
     end
 
     it "ignores marker if not followed by a space" do
       para = parse_single(">Para", :paragraph, 1)
-      assert_equal(">Para", para.children[0][:content])
+      assert_equal(">Para", para.children[0].content)
     end
 
     it "only allows the marker followed by line break during a blockquote, not at the start" do
@@ -464,7 +464,7 @@ describe VersaDok::Parser do
     it "treats list items that would start a new list but are not on a block boundary as " \
        "continuation lines" do
       list = parse_single("* item1\n- item2", :list, 1)
-      assert_equal("item1 - item2", list.children[0].children[0].children[0][:content])
+      assert_equal("item1 - item2", list.children[0].children[0].children[0].content)
     end
 
     it "works for bullet lists using asterisks" do
@@ -526,7 +526,7 @@ describe VersaDok::Parser do
     it "parses the content as block elements by default" do
       node = parse_single("::mark:\n para\ngraph\n\n > block", :extension_block, 3)
       assert_equal(:block, node.content_model)
-      assert_equal("para graph", node.children[0].children[0][:content])
+      assert_equal("para graph", node.children[0].children[0].content)
       assert_equal(:blockquote, node.children[2].type)
     end
 
@@ -554,14 +554,14 @@ describe VersaDok::Parser do
     it "ignores the marker if it doesn't constitute a correct marker" do
       nodes = parse_multi("::para\n  another", 1)
       assert_equal(:paragraph, nodes[0].type)
-      assert_equal("::para another", nodes[0].children[0][:content])
+      assert_equal("::para another", nodes[0].children[0].content)
     end
 
     it "creates an appropriate block for an invalidly unindented, directly following content line" do
       nodes = parse_multi("::para:\n# another", 2)
       assert_equal(:extension_block, nodes[0].type)
       assert_equal(:paragraph, nodes[1].type)
-      assert_equal("# another", nodes[1].children[0][:content])
+      assert_equal("# another", nodes[1].children[0].content)
     end
   end
 
@@ -585,7 +585,7 @@ describe VersaDok::Parser do
 
     it "ignores an attribute list if it cannot be parsed" do
       node = parse_single("{#id} trash\npara", :paragraph, 1)
-      assert_equal("{#id} trash para", node.children[0][:content])
+      assert_equal("{#id} trash para", node.children[0].content)
     end
   end
 
@@ -663,40 +663,40 @@ describe VersaDok::Parser do
     it "works inside of words" do
       node = parse_single("a*test*b", :paragraph, 3)
       assert_equal(:strong, node.children[1].type)
-      assert_equal("a", node.children[0][:content])
-      assert_equal("b", node.children[2][:content])
+      assert_equal("a", node.children[0].content)
+      assert_equal("b", node.children[2].content)
     end
 
     it "ignores closing markers when element has not been opened" do
       node = parse_single("a* test", :paragraph, 1)
-      assert_equal("a* test", node.children[0][:content])
+      assert_equal("a* test", node.children[0].content)
     end
 
     it "ignores markers with whitespace around them" do
       node = parse_single("a * b*", :paragraph, 1)
-      assert_equal("a * b*", node.children[0][:content])
+      assert_equal("a * b*", node.children[0].content)
     end
 
     it "allows nesting of same-type elements" do
       node = parse_single("a*test *b* test*", :paragraph, 2)
       assert_equal(:strong, node.children[1].type)
-      assert_equal("a", node.children[0][:content])
-      assert_equal("test ", node.children[1].children[0][:content])
+      assert_equal("a", node.children[0].content)
+      assert_equal("test ", node.children[1].children[0].content)
       assert_equal(:strong, node.children[1].children[1].type)
-      assert_equal(" test", node.children[1].children[2][:content])
+      assert_equal(" test", node.children[1].children[2].content)
     end
 
     it "works directly before continuation lines borders" do
       node = parse_single("*test*\n_hallo_", :paragraph, 3)
       assert_equal(:strong, node.children[0].type)
       assert_equal(:emphasis, node.children[2].type)
-      assert_equal(" ", node.children[1][:content])
+      assert_equal(" ", node.children[1].content)
     end
 
     it "works across continuation lines" do
       node = parse_single("*test\rhallo*", :paragraph, 1)
       assert_equal(:strong, node.children[0].type)
-      assert_equal("test hallo", node.children[0].children[0][:content])
+      assert_equal("test hallo", node.children[0].children[0].content)
     end
 
     it "handles unclosed nodes" do
@@ -704,76 +704,76 @@ describe VersaDok::Parser do
       assert_equal(:emphasis, node.children[0].type)
       assert_equal(:text, node.children[1].type)
       assert_equal(:strong, node.children[2].type)
-      assert_equal('home *star', node.children[0].children[0][:content])
-      assert_equal('home _star', node.children[2].children[0][:content])
+      assert_equal('home *star', node.children[0].children[0].content)
+      assert_equal('home _star', node.children[2].children[0].content)
     end
   end
 
   describe "parse_backslash_escape" do
     it "handles the marker characters for simple inline markup" do
       node = parse_single("T~his\\~ \\*is _not\\_ m\\^ark^ed* \\`up`.", :paragraph, 1)
-      assert_equal('T~his~ *is _not_ m^ark^ed* `up`.', node.children[0][:content])
+      assert_equal('T~his~ *is _not_ m^ark^ed* `up`.', node.children[0].content)
     end
 
     it "handles the marker characters for links" do
       node = parse_single("This \\[ is\\] not\\( a \\)drill", :paragraph, 1)
-      assert_equal('This [ is] not( a )drill', node.children[0][:content])
+      assert_equal('This [ is] not( a )drill', node.children[0].content)
     end
 
     it "replaces an escaped space with a non-breaking space" do
       node = parse_single("This\\ space.", :paragraph, 1)
-      assert_equal("This\u00a0space.", node.children[0][:content])
+      assert_equal("This\u00a0space.", node.children[0].content)
     end
 
     it "replaces an escaped backslash with a backslash" do
       node = parse_single("This\\\\ space.", :paragraph, 1)
-      assert_equal("This\\ space.", node.children[0][:content])
+      assert_equal("This\\ space.", node.children[0].content)
     end
   end
 
   describe "parse_verbatim" do
     it "works on a single line" do
       node = parse_single("Some `text` here", :paragraph, 3)
-      assert_equal("Some ", node.children[0][:content])
+      assert_equal("Some ", node.children[0].content)
       assert_equal(:verbatim, node.children[1].type)
       assert_equal([], node.children[1].children)
-      assert_equal("text", node.children[1][:content])
-      assert_equal(" here", node.children[2][:content])
+      assert_equal("text", node.children[1].content)
+      assert_equal(" here", node.children[2].content)
     end
 
     it "works on a single line with unclosed node" do
       node = parse_single("Some `text here", :paragraph, 1)
-      assert_equal("Some `text here", node.children[0][:content])
+      assert_equal("Some `text here", node.children[0].content)
     end
 
     it "works on a single line containing inline-like markup" do
       node = parse_single("May *s `t* *data*` z", :paragraph, 3)
-      assert_equal("May *s ", node.children[0][:content])
+      assert_equal("May *s ", node.children[0].content)
       assert_equal(:verbatim, node.children[1].type)
       assert_equal([], node.children[1].children)
-      assert_equal("t* *data*", node.children[1][:content])
-      assert_equal(" z", node.children[2][:content])
+      assert_equal("t* *data*", node.children[1].content)
+      assert_equal(" z", node.children[2].content)
     end
 
     it "works on a single line containing inline-like markup with unclosed node" do
       node = parse_single("May *s `t* *data* z", :paragraph, 3)
-      assert_equal("May *s `t* ", node.children[0][:content])
+      assert_equal("May *s `t* ", node.children[0].content)
       assert_equal(:strong, node.children[1].type)
-      assert_equal(" z", node.children[2][:content])
+      assert_equal(" z", node.children[2].content)
     end
 
     it "works on multiple lines" do
       node = parse_single("Some `text *here\n  cont*inuing` here", :paragraph, 3)
       assert_equal(:verbatim, node.children[1].type)
       assert_equal([], node.children[1].children)
-      assert_equal("text *here\ncont*inuing", node.children[1][:content])
+      assert_equal("text *here\ncont*inuing", node.children[1].content)
     end
 
     it "works on multiple lines with unclosed node" do
       node = parse_single("Some `text *here\n  cont*inuing here", :paragraph, 3)
-      assert_equal("Some `text ", node.children[0][:content])
+      assert_equal("Some `text ", node.children[0].content)
       assert_equal(:strong, node.children[1].type)
-      assert_equal("here cont", node.children[1].children[0][:content])
+      assert_equal("here cont", node.children[1].children[0].content)
     end
   end
 
@@ -781,18 +781,18 @@ describe VersaDok::Parser do
     it "works if the link content is across lines" do
       node = parse_single("Some [link\n  content](here) comes", :paragraph, 3)
       assert_equal(:link, node.children[1].type)
-      assert_equal("link content", node.children[1].children[0][:content])
+      assert_equal("link content", node.children[1].children[0].content)
     end
 
     it "ignores right brackets that don't close the link content" do
       node = parse_single("Some [link] content](here) comes", :paragraph, 3)
       assert_equal(:link, node.children[1].type)
-      assert_equal("link] content", node.children[1].children[0][:content])
+      assert_equal("link] content", node.children[1].children[0].content)
     end
 
     it "ignores right parentheses that don't close the inline link part" do
       node = parse_single("Some here) comes", :paragraph, 1)
-      assert_equal("Some here) comes", node.children[0][:content])
+      assert_equal("Some here) comes", node.children[0].content)
     end
 
     it "ignores the link if another inline markup closes within the link content" do
@@ -800,7 +800,7 @@ describe VersaDok::Parser do
       assert_equal(:text, node.children[0].type)
       assert_equal(:strong, node.children[1].type)
       assert_equal(:text, node.children[2].type)
-      assert_equal("strong [argument", node.children[1].children[0][:content])
+      assert_equal("strong [argument", node.children[1].children[0].content)
     end
 
     describe "inline" do
@@ -808,7 +808,7 @@ describe VersaDok::Parser do
         node = parse_single("Some [link](here) comes", :paragraph, 3)
         assert_equal(:link, node.children[1].type)
         assert_equal("here", node.children[1][:destination])
-        assert_equal("link", node.children[1].children[0][:content])
+        assert_equal("link", node.children[1].children[0].content)
       end
 
       it "works if the inline link is across lines" do
@@ -819,12 +819,12 @@ describe VersaDok::Parser do
 
       it "handles a missing closing parentheses" do
         node = parse_single("Some [link](here comes", :paragraph, 1)
-        assert_equal("Some [link](here comes", node.children[0][:content])
+        assert_equal("Some [link](here comes", node.children[0].content)
       end
 
       it "prevents inline markup closing across the ]( border (like with verbatim)" do
         node = parse_single("Some [*link](here*", :paragraph, 1)
-        assert_equal("Some [*link](here*", node.children[0][:content])
+        assert_equal("Some [*link](here*", node.children[0].content)
       end
     end
 
@@ -833,7 +833,7 @@ describe VersaDok::Parser do
         node = parse_single("Some [link][here] comes", :paragraph, 3)
         assert_equal(:link, node.children[1].type)
         assert_equal("here", node.children[1][:reference])
-        assert_equal("link", node.children[1].children[0][:content])
+        assert_equal("link", node.children[1].children[0].content)
       end
 
       it "works if the reference link name is across lines" do
@@ -844,12 +844,12 @@ describe VersaDok::Parser do
 
       it "handles a missing closing parentheses" do
         node = parse_single("Some [link][here comes", :paragraph, 1)
-        assert_equal("Some [link][here comes", node.children[0][:content])
+        assert_equal("Some [link][here comes", node.children[0].content)
       end
 
       it "prevents inline markup closing across the ][ border (like with verbatim)" do
         node = parse_single("Some [*link][here*", :paragraph, 1)
-        assert_equal("Some [*link][here*", node.children[0][:content])
+        assert_equal("Some [*link][here*", node.children[0].content)
       end
     end
   end

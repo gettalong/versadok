@@ -70,12 +70,12 @@ module VersaDok
           children = @stack[i - 1].children
           node = children.delete_at(-1)
           if children.last&.type == :text
-            children.last[:content] << node[:marker].to_s
+            children.last.content << node[:marker].to_s
           else
-            children << Node.new(:text, properties: {content: +node[:marker].to_s})
+            children << Node.new(:text, content: +node[:marker].to_s)
           end
           if node.children.first&.type == :text
-            children.last[:content] << node.children.first[:content]
+            children.last.content << node.children.first.content
             children.concat(node.children[1..-1])
           else
             children.concat(node.children)
@@ -364,7 +364,7 @@ module VersaDok
 
       @stack.each_inline_verbatim do |node|
         start_pos = node[:pos] || start_of_line
-        node[:content] << @scanner.string.byteslice(start_pos, @scanner.pos - start_pos)
+        node.content << @scanner.string.byteslice(start_pos, @scanner.pos - start_pos)
         node.properties.delete(:pos)
       end
 
@@ -394,10 +394,10 @@ module VersaDok
         node.children.clear
         @stack.close_node(index)
         start_pos = node[:pos] || start_of_line
-        node[:content] << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
+        node.content << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
       else
-        @stack.append_child(Node.new(:verbatim, properties: {marker: '`', content: +'',
-                                                             pos: @scanner.pos}))
+        @stack.append_child(Node.new(:verbatim, content: +'',
+                                     properties: {marker: '`', pos: @scanner.pos}))
       end
     end
 
@@ -408,10 +408,9 @@ module VersaDok
     def parse_link_data_opened(byte)
       link_type = (byte == 40 ? :destination : :reference)
       if (index = @stack.node_index(:link))
-        @stack.append_child(Node.new(:link_data, properties: {category: :inline, content: +'',
-                                                              content_model: :verbatim, marker: '',
-                                                              link_type: link_type,
-                                                              pos: @scanner.pos}))
+        @stack.append_child(Node.new(:link_data, content: +'',
+                                     properties: {category: :inline, content_model: :verbatim,
+                                                  marker: '', link_type: link_type, pos: @scanner.pos}))
       end
       add_text(link_type == :destination ? '](' : '][')
     end
@@ -420,11 +419,11 @@ module VersaDok
       if (index = @stack.node_index(:link_data)) && @stack[index][:link_type] == type
         link_data_node = @stack.remove_node(index)
         start_pos = link_data_node[:pos] || start_of_line
-        link_data_node[:content] << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
-        link_data_node[:content].gsub!(/\s*(?:#{EOL_RE_STR})/, "")
+        link_data_node.content << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
+        link_data_node.content.gsub!(/\s*(?:#{EOL_RE_STR})/o, "")
 
         index = @stack.node_index(:link)
-        @stack[index][type] = link_data_node[:content]
+        @stack[index][type] = link_data_node.content
         @stack.close_node(index)
       else
         add_text(type == :destination ? ')' : ']')
@@ -442,9 +441,9 @@ module VersaDok
 
     def add_text(text)
       if @stack.last_child&.type == :text
-        @stack.last_child[:content] << text
+        @stack.last_child.content << text
       else
-        @stack.append_child(Node.new(:text, properties: {content: +text}), container: false)
+        @stack.append_child(Node.new(:text, content: +text), container: false)
       end
     end
 
