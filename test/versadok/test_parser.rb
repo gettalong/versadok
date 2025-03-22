@@ -583,7 +583,7 @@ describe VersaDok::Parser do
       assert_nil(nodes[1].attributes)
     end
 
-    it "ignores an attribute list if it cannot be parsed" do
+    it "ignores an attribute list if it cannot be parsed (e.g. due to trailing content)" do
       node = parse_single("{#id} trash\npara", :paragraph, 1)
       assert_equal("{#id} trash para", node.children[0].content)
     end
@@ -720,6 +720,11 @@ describe VersaDok::Parser do
       assert_equal('This [ is] not( a )drill', node.children[0].content)
     end
 
+    it "handles the marker characters for inline attribute lists" do
+      node = parse_single("This \\{ is\\} a drill", :paragraph, 1)
+      assert_equal('This { is} a drill', node.children[0].content)
+    end
+
     it "replaces an escaped space with a non-breaking space" do
       node = parse_single("This\\ space.", :paragraph, 1)
       assert_equal("This\u00a0space.", node.children[0].content)
@@ -851,6 +856,31 @@ describe VersaDok::Parser do
         node = parse_single("Some [*link][here*", :paragraph, 1)
         assert_equal("Some [*link][here*", node.children[0].content)
       end
+    end
+  end
+
+  describe "inline attribute lists" do
+    it "works after inline elements" do
+      node = parse_single("Some *strong*{#id} element", :paragraph, 3)
+      assert_equal(:strong, node.children[1].type)
+      assert_equal("id", node.children[1].attributes['id'])
+      assert_equal("Some ", node.children[0].content)
+      assert_equal(" element", node.children[2].content)
+    end
+
+    it "multiple attribute lists can be used" do
+      node = parse_single("Some *strong*{#id}{.class} element", :paragraph, 3)
+      assert_equal({'id' => "id", 'class' => 'class'}, node.children[1].attributes)
+    end
+
+    it "ignores the inline attribute list if not closed" do
+      node = parse_single("Some *strong*{#id element", :paragraph, 3)
+      assert_equal("{#id element", node.children[2].content)
+    end
+
+    it "prevents inline markup closing across the { marker (like verbatim)" do
+      node = parse_single("Some *strong{#id* element", :paragraph, 1)
+      assert_equal("Some *strong{#id* element", node.children[0].content)
     end
   end
 end

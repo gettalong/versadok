@@ -304,8 +304,8 @@ module VersaDok
     end
 
     INLINE_RE = /(?=
-                   \\[*_~^`\[\]\(\) \\]   # Match backslash escapes
-                   |[*_~^`\[\]\)]         # Match inline element start
+                   \\[*_~^`\[\]\(\)\{\} \\]   # Match backslash escapes
+                   |[*_~^`\[\]\)\{\}]         # Match inline element start or end
                    |#{EOL_RE_STR})        # Match end of line
                 /ox
 
@@ -356,6 +356,10 @@ module VersaDok
           end
         when 41 # )
           parse_link_data_closed(:destination, start_of_line)
+        when 123 # {
+          parse_inline_attribute_list_opened
+        when 125 # }
+          parse_inline_attribute_list_closed(start_of_line)
         when 10, 13 # \n \r
           @scanner.scan_byte if byte == 13 && @scanner.peek_byte == 10
           break
@@ -427,6 +431,24 @@ module VersaDok
         @stack.close_node(index)
       else
         add_text(type == :destination ? ')' : ']')
+      end
+    end
+
+    def parse_inline_attribute_list_opened
+      @stack.append_child(Node.new(:attribute_list, content: +'',
+                                   properties: {category: :inline, content_model: :verbatim,
+                                                marker: '{', pos: @scanner.pos}))
+    end
+
+    def parse_inline_attribute_list_closed(start_of_line)
+      if (index = @stack.node_index(:attribute_list)) &&
+         ((child = @stack[index - 1].children[-2]) && child.type != :text)
+        al_node = @stack.remove_node(index)
+        start_pos = al_node[:pos] || start_of_line
+        al_node.content << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
+        parse_attribute_list_content(al_node.content, @stack.last_child.attributes ||= {})
+      else
+        add_text('}')
       end
     end
 
