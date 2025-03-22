@@ -365,3 +365,16 @@ whitespace before the line break as well as the line break itself are removed.
   This is [a link with](a linebreak
   in the destination).
 
+
+### Inline attribute list
+
+An inline attribute list has the same syntax as a block attribute list but needs to follow directly
+after another inline element. Directly means without any intervening characters.
+
+::example:
+  This is a *strong*{#id} element with an id.
+
+It is possible to use multiple inline attribute lists after one another:
+
+::example:
+  This is [a link](link){.with}{#id}.
