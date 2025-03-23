@@ -372,8 +372,12 @@ describe VersaDok::Parser do
     end
 
     it "parses continuation lines" do
-      header = parse_single("# header\ncontin\r\n  ued\r# here\n## and here", :header, 1)
-      assert_equal("header contin ued here ## and here", header.children[0].content)
+      header = parse_single("# header\ncontin\r\n  ued\r# here\\\n## and here", :header, 9)
+      assert_equal("header", header.children[0].content)
+      assert_equal("contin", header.children[2].content)
+      assert_equal("ued", header.children[4].content)
+      assert_equal("here", header.children[6].content)
+      assert_equal("## and here", header.children[8].content)
     end
 
     it "ignores the marker if not followed by a space" do
@@ -382,8 +386,8 @@ describe VersaDok::Parser do
     end
 
     it "ignores the marker on a continuation line when not already in a header" do
-      para = parse_single("Para\n# header", :paragraph, 1)
-      assert_equal("Para # header", para.children[0].content)
+      para = parse_single("Para\n# header", :paragraph, 3)
+      assert_equal("# header", para.children[2].content)
     end
   end
 
@@ -399,8 +403,9 @@ describe VersaDok::Parser do
     end
 
     it "handles a line with just the marker and nothing else as paragraph" do
-      para = parse_single(">\r>\r\n>\n>", :paragraph, 1)
-      assert_equal("> > > >", para.children[0].content)
+      para = parse_single(">\r>\r\n>\n>", :paragraph, 7)
+      [0, 2, 4, 6].each {|i| assert_equal(">", para.children[i].content) }
+      [1, 3, 5].each {|i| assert_equal(:soft_break, para.children[i].type) }
     end
 
     it "parses lines with the marker and nothing else on the line" do
@@ -419,18 +424,21 @@ describe VersaDok::Parser do
     it "parses continuation lines with the marker" do
       bq = parse_single("> Test\n> other", :blockquote, 1)
       assert_equal(:paragraph, bq.children[0].type)
-      assert_equal("Test other", bq.children[0].children[0].content)
+      assert_equal("Test", bq.children[0].children[0].content)
+      assert_equal(:soft_break, bq.children[0].children[1].type)
+      assert_equal("other", bq.children[0].children[2].content)
     end
 
     it "parses continuation lines without the marker" do
       bq = parse_single("> Test1\nTest2", :blockquote, 1)
       assert_equal(:paragraph, bq.children[0].type)
-      assert_equal("Test1 Test2", bq.children[0].children[0].content)
+      assert_equal("Test1", bq.children[0].children[0].content)
+      assert_equal("Test2", bq.children[0].children[2].content)
     end
 
     it "ignores markers when not on block boundary" do
-      para = parse_single("Para\n> test", :paragraph, 1)
-      assert_equal("Para > test", para.children[0].content)
+      para = parse_single("Para\n> test", :paragraph, 3)
+      assert_equal("> test", para.children[2].content)
     end
 
     it "ignores marker if not followed by a space" do
@@ -439,7 +447,7 @@ describe VersaDok::Parser do
     end
 
     it "only allows the marker followed by line break during a blockquote, not at the start" do
-      parse_single(">\n> Test", :paragraph, 1)
+      parse_single(">\n> Test", :paragraph, 3)
     end
   end
 
@@ -464,7 +472,7 @@ describe VersaDok::Parser do
     it "treats list items that would start a new list but are not on a block boundary as " \
        "continuation lines" do
       list = parse_single("* item1\n- item2", :list, 1)
-      assert_equal("item1 - item2", list.children[0].children[0].children[0].content)
+      assert_equal("- item2", list.children[0].children[0].children[2].content)
     end
 
     it "works for bullet lists using asterisks" do
@@ -526,7 +534,8 @@ describe VersaDok::Parser do
     it "parses the content as block elements by default" do
       node = parse_single("::mark:\n para\ngraph\n\n > block", :extension_block, 3)
       assert_equal(:block, node.content_model)
-      assert_equal("para graph", node.children[0].children[0].content)
+      assert_equal("para", node.children[0].children[0].content)
+      assert_equal("graph", node.children[0].children[2].content)
       assert_equal(:blockquote, node.children[2].type)
     end
 
@@ -554,7 +563,9 @@ describe VersaDok::Parser do
     it "ignores the marker if it doesn't constitute a correct marker" do
       nodes = parse_multi("::para\n  another", 1)
       assert_equal(:paragraph, nodes[0].type)
-      assert_equal("::para another", nodes[0].children[0].content)
+      assert_equal("::para", nodes[0].children[0].content)
+      assert_equal(:soft_break, nodes[0].children[1].type)
+      assert_equal("another", nodes[0].children[2].content)
     end
 
     it "creates an appropriate block for an invalidly unindented, directly following content line" do
@@ -584,8 +595,9 @@ describe VersaDok::Parser do
     end
 
     it "ignores an attribute list if it cannot be parsed (e.g. due to trailing content)" do
-      node = parse_single("{#id} trash\npara", :paragraph, 1)
-      assert_equal("{#id} trash para", node.children[0].content)
+      node = parse_single("{#id} trash\npara", :paragraph, 3)
+      assert_equal("{#id} trash", node.children[0].content)
+      assert_equal("para", node.children[2].content)
     end
   end
 
@@ -694,14 +706,16 @@ describe VersaDok::Parser do
     it "works directly before continuation lines borders" do
       node = parse_single("*test*\n_hallo_", :paragraph, 3)
       assert_equal(:strong, node.children[0].type)
+      assert_equal(:soft_break, node.children[1].type)
       assert_equal(:emphasis, node.children[2].type)
-      assert_equal(" ", node.children[1].content)
     end
 
     it "works across continuation lines" do
       node = parse_single("*test\rhallo*", :paragraph, 1)
       assert_equal(:strong, node.children[0].type)
-      assert_equal("test hallo", node.children[0].children[0].content)
+      assert_equal("test", node.children[0].children[0].content)
+      assert_equal(:soft_break, node.children[0].children[1].type)
+      assert_equal("hallo", node.children[0].children[2].content)
     end
 
     it "handles unclosed nodes" do
@@ -728,6 +742,13 @@ describe VersaDok::Parser do
     it "handles the marker characters for inline attribute lists" do
       node = parse_single("This \\{ is\\} a drill", :paragraph, 1)
       assert_equal('This { is} a drill', node.children[0].content)
+    end
+
+    it "replaces an escaped line break with a hard line break element" do
+      node = parse_single("This\\\nspace.", :paragraph, 3)
+      assert_equal("This", node.children[0].content)
+      assert_equal(:hard_break, node.children[1].type)
+      assert_equal("space.", node.children[2].content)
     end
 
     it "replaces an escaped space with a non-breaking space" do
@@ -783,15 +804,20 @@ describe VersaDok::Parser do
       node = parse_single("Some `text *here\n  cont*inuing here", :paragraph, 3)
       assert_equal("Some `text ", node.children[0].content)
       assert_equal(:strong, node.children[1].type)
-      assert_equal("here cont", node.children[1].children[0].content)
+      assert_equal("here", node.children[1].children[0].content)
+      assert_equal(:soft_break, node.children[1].children[1].type)
+      assert_equal("cont", node.children[1].children[2].content)
     end
   end
 
   describe "link" do
     it "works if the link content is across lines" do
       node = parse_single("Some [link\n  content](here) comes", :paragraph, 3)
-      assert_equal(:link, node.children[1].type)
-      assert_equal("link content", node.children[1].children[0].content)
+      link = node.children[1]
+      assert_equal(:link, link.type)
+      assert_equal("link", link.children[0].content)
+      assert_equal(:soft_break, link.children[1].type)
+      assert_equal("content", link.children[2].content)
     end
 
     it "ignores right brackets that don't close the link content" do

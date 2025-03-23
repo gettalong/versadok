@@ -304,7 +304,7 @@ module VersaDok
     end
 
     INLINE_RE = /(?=
-                   \\[*_~^`\[\]\(\)\{\} \\]   # Match backslash escapes
+                   \\[*_~^`\[\]\(\)\{\}\r\n \\]   # Match backslash escapes
                    |[*_~^`\[\]\)\{\}]         # Match inline element start or end
                    |#{EOL_RE_STR})        # Match end of line
                 /ox
@@ -332,7 +332,6 @@ module VersaDok
       @stack.reset_level(-1)
       start_of_line = @scanner.pos
 
-      add_text(' ') if @stack.last_child&.category == :inline
       while !@scanner.eos? && (text = @scanner.scan_until(INLINE_RE))
         add_text(text) unless text.empty?
         case (byte = @scanner.scan_byte)
@@ -364,6 +363,9 @@ module VersaDok
           parse_inline_attribute_list_closed(start_of_line)
         when 10, 13 # \n \r
           @scanner.scan_byte if byte == 13 && @scanner.peek_byte == 10
+          unless @stack.last_child.type == :hard_break
+            @stack.append_child(Node.new(:soft_break), container: false)
+          end
           break
         end
       end
@@ -391,7 +393,13 @@ module VersaDok
     BACKSLASH_ESCAPE_MAP[32] = "\u00A0"
 
     def parse_backslash_escape
-      add_text(BACKSLASH_ESCAPE_MAP[@scanner.scan_byte])
+      case (byte = @scanner.scan_byte)
+      when 10, 13 # \n \r
+        @scanner.unscan
+        @stack.append_child(Node.new(:hard_break), container: false)
+      else
+        add_text(BACKSLASH_ESCAPE_MAP[byte])
+      end
     end
 
     def parse_verbatim(start_of_line)
