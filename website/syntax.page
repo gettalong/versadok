@@ -379,3 +379,12 @@ It is possible to use multiple inline attribute lists after one another:
 
 ::example:
   This is [a link](link){.with}{#id}.
+
+
+### Span
+
+A span element looks similar to a link but instead of the content being followed by a link
+destination or reference, it is directly followed by an inline attribute list.
+
+::example:
+  This is a [generic span]{#id}.
