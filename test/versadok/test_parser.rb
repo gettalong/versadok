@@ -603,7 +603,11 @@ describe VersaDok::Parser do
     end
 
     it "recognizes references" do
-      assert_attribute_list({refs: ["ähm.cl#3", "omy"]}, "ähm.cl#3 omy")
+      assert_attribute_list({refs: ["ähm.cl#3", "om{}y"]}, "ähm.cl#3 om{}y")
+    end
+
+    it "removes escaped closing braces from references" do
+      assert_attribute_list({refs: ["ref}here"]}, "ref\\}here")
     end
 
     it "recognizes key-value pairs without quoting" do
@@ -630,8 +634,9 @@ describe VersaDok::Parser do
       assert_attribute_list({"key" => "t\\his'is"}, "key='t\\his\\'is'")
     end
 
-    it "doesn't allow unescaped closing braces anywhere" do
-      assert_attribute_list({}, "#id}a .cl}ass re}e key=val}ue")
+    it "doesn't allow unescaped closing braces in attribute names or values" do
+      assert_attribute_list({refs: ['#id}a', '.cl}ass', 're}e', 'key=val}ue']},
+                            "#id}a .cl}ass re}e key=val}ue")
     end
 
     it "works for empty strings" do

@@ -246,10 +246,11 @@ character except whitespace, the '#' or '.' or '}' characters):
     {key="quo\}ted" another='single quoted' and=bare}
     paragraph
 
-* All other occurences of whitespace delimited character sequences are references.
+* All other occurences of whitespace delimited character sequences are references. Escaped '}'
+  characters are replaced with just '}' characters.
 
   ::example:
-    {everything here is just a reference}
+    {everything here is just {a\} reference}
     paragraph
 
 

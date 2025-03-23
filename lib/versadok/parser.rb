@@ -495,7 +495,7 @@ module VersaDok
     AL_ANY_CHARS = /\\\}|[^}]/
     AL_NAME = /[^[:space:].#}]+/
     AL_TYPE_KEY_VALUE_PAIR = /(#{AL_NAME})=(?:("|')((?:\\\}|\\\2|[^}\2])*?)\2|((?:\\\}|[^[:space:]}])+))/
-    AL_TYPE_REF = /([^[:space:]}]+)/
+    AL_TYPE_REF = /([^[:space:]]+)/
     AL_TYPE_CLASS = /\.(#{AL_NAME})/
     AL_TYPE_ID = /#(#{AL_NAME})/
     AL_TYPE_ANY = /(?:\A|\s)(?:#{AL_TYPE_KEY_VALUE_PAIR}|#{AL_TYPE_ID}|#{AL_TYPE_CLASS}|#{AL_TYPE_REF})(?=\s|\Z)/
@@ -511,6 +511,7 @@ module VersaDok
 
       str.scan(AL_TYPE_ANY).each do |key, quote, val, val1, id_name, class_name, ref|
         if ref
+          ref.gsub!(/\\(\})/, "\\1")
           (attrs[:refs] ||= []) << ref
         elsif class_name
           attrs['class'] = "#{attrs['class']} #{class_name}".lstrip
