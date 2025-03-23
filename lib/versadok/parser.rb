@@ -348,8 +348,10 @@ module VersaDok
           parse_link_opened
         when 93 # ]
           case (byte = @scanner.scan_byte)
-          when 40, 91 # (
+          when 40, 91 # ( [
             parse_link_data_opened(byte)
+          when 123 # {
+            parse_span
           else
             @scanner.unscan
             parse_link_data_closed(:reference, start_of_line)
@@ -357,7 +359,7 @@ module VersaDok
         when 41 # )
           parse_link_data_closed(:destination, start_of_line)
         when 123 # {
-          parse_inline_attribute_list_opened
+          parse_inline_attribute_list_opened('{')
         when 125 # }
           parse_inline_attribute_list_closed(start_of_line)
         when 10, 13 # \n \r
@@ -434,19 +436,38 @@ module VersaDok
       end
     end
 
-    def parse_inline_attribute_list_opened
+    def parse_span
+      if (index = @stack.node_index(:link))
+        @stack[index].type = :span
+        parse_inline_attribute_list_opened(']{')
+      else
+        add_text(']{')
+      end
+    end
+
+    def parse_inline_attribute_list_opened(marker)
       @stack.append_child(Node.new(:attribute_list, content: +'',
                                    properties: {category: :inline, content_model: :verbatim,
-                                                marker: '{', pos: @scanner.pos}))
+                                                marker: marker, pos: @scanner.pos}))
     end
 
     def parse_inline_attribute_list_closed(start_of_line)
       if (index = @stack.node_index(:attribute_list)) &&
-         ((child = @stack[index - 1].children[-2]) && child.type != :text)
+         (((child = @stack[index - 1].children[-2]) && child.type != :text) ||
+          @stack[index][:marker] == ']{')
         al_node = @stack.remove_node(index)
         start_pos = al_node[:pos] || start_of_line
         al_node.content << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
-        parse_attribute_list_content(al_node.content, @stack.last_child.attributes ||= {})
+
+        node = if al_node[:marker] == ']{'
+                 index = @stack.node_index(:span)
+                 node = @stack[index]
+                 @stack.close_node(index)
+                 node
+               else
+                 @stack.last_child
+               end
+        parse_attribute_list_content(al_node.content, node.attributes ||= {})
       else
         add_text('}')
       end

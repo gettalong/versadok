@@ -43,6 +43,7 @@ module VersaDok
       text: :inline,
       verbatim: :inline,
       link: :inline,
+      span: :inline,
     }
 
     CONTENT_MODEL_MAP = { #:nodoc:
@@ -58,6 +59,7 @@ module VersaDok
       text: :none,
       verbatim: :verbatim,
       link: :inline,
+      span: :inline,
     }
 
     attr_accessor :type

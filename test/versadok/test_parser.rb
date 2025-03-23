@@ -883,4 +883,29 @@ describe VersaDok::Parser do
       assert_equal("Some *strong{#id* element", node.children[0].content)
     end
   end
+
+  describe "span" do
+    it "it needs a bracketed content with an IAL" do
+      node = parse_single("Some [span]{#id} element", :paragraph, 3)
+      assert_equal(:span, node.children[1].type)
+      assert_equal("id", node.children[1].attributes['id'])
+      assert_equal("Some ", node.children[0].content)
+      assert_equal(" element", node.children[2].content)
+    end
+
+    it "ignores the span if the IAL is not closed" do
+      node = parse_single("Some [span]{#id element", :paragraph, 1)
+      assert_equal("Some [span]{#id element", node.children[0].content)
+    end
+
+    it "ignores the span-closing/IAL-openeing marker if no span-opening marker was before" do
+      node = parse_single("Some span]{#id element", :paragraph, 1)
+      assert_equal("Some span]{#id element", node.children[0].content)
+    end
+
+    it "prevents inline markup closing across the ]{ marker (like verbatim)" do
+      node = parse_single("Some [*strong]{#id* element", :paragraph, 1)
+      assert_equal("Some [*strong]{#id* element", node.children[0].content)
+    end
+  end
 end
