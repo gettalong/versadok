@@ -873,14 +873,26 @@ describe VersaDok::Parser do
       assert_equal({'id' => "id", 'class' => 'class'}, node.children[1].attributes)
     end
 
+    it "ignores the nested inline attribute lists" do
+      node = parse_single("Some *strong*{#id element", :paragraph, 3)
+      assert_equal("{#id element", node.children[2].content)
+    end
+
     it "ignores the inline attribute list if not closed" do
       node = parse_single("Some *strong*{#id element", :paragraph, 3)
       assert_equal("{#id element", node.children[2].content)
     end
 
+    it "ignores the opening marker if not directly preceeded by an element" do
+      node = parse_single("Some _*strong* {#id_} element", :paragraph, 3)
+      assert_equal(:emphasis, node.children[1].type)
+      assert_equal(" {#id", node.children[1].children[1].content)
+    end
+
     it "prevents inline markup closing across the { marker (like verbatim)" do
-      node = parse_single("Some *strong{#id* element", :paragraph, 1)
-      assert_equal("Some *strong{#id* element", node.children[0].content)
+      node = parse_single("Some _*strong*{#id_ element", :paragraph, 3)
+      assert_equal("Some _", node.children[0].content)
+      assert_equal("{#id_ element", node.children[2].content)
     end
   end
 

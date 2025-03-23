@@ -446,15 +446,17 @@ module VersaDok
     end
 
     def parse_inline_attribute_list_opened(marker)
-      @stack.append_child(Node.new(:attribute_list, content: +'',
-                                   properties: {category: :inline, content_model: :verbatim,
-                                                marker: marker, pos: @scanner.pos}))
+      if ((child = @stack.last_child) && child.type != :text) || marker == ']{'
+        @stack.append_child(Node.new(:attribute_list, content: +'',
+                                     properties: {category: :inline, content_model: :verbatim,
+                                                  marker: marker, pos: @scanner.pos}))
+      else
+        add_text('{')
+      end
     end
 
     def parse_inline_attribute_list_closed(start_of_line)
-      if (index = @stack.node_index(:attribute_list)) &&
-         (((child = @stack[index - 1].children[-2]) && child.type != :text) ||
-          @stack[index][:marker] == ']{')
+      if (index = @stack.node_index(:attribute_list))
         al_node = @stack.remove_node(index)
         start_pos = al_node[:pos] || start_of_line
         al_node.content << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
