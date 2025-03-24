@@ -745,7 +745,7 @@ describe VersaDok::Parser do
     end
 
     it "replaces an escaped line break with a hard line break element" do
-      node = parse_single("This\\\nspace.", :paragraph, 3)
+      node = parse_single("This\\\nspace.\n", :paragraph, 3)
       assert_equal("This", node.children[0].content)
       assert_equal(:hard_break, node.children[1].type)
       assert_equal("space.", node.children[2].content)
