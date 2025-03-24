@@ -305,6 +305,7 @@ Besides the special characters, the following escape sequences are supported:
 
 * "\\ " (space) will be converted to a non-breaking space
 * "\\\\" (backslash) will be converted to a single backslash
+* A backslash at the end of a line is converted to a hard break
 
 
 ### Strong and emphasis
@@ -388,3 +389,20 @@ destination or reference, it is directly followed by an inline attribute list.
 
 ::example:
   This is a [generic span]{#id}.
+
+
+### Line break
+
+A line break is converted to a soft break element which allows a processor to decide what to do with
+it (e.g. converting to a space character or leaving it as a line break).
+
+::example:
+  This is a paragraph with two lines,
+  having a soft break between the two lines.
+
+By putting a backslash before a line break a hard break element is created which indicates a
+mandatory line break.
+
+::example:
+  This is a paragraph with two lines,\
+  having a hard break between the two lines.
