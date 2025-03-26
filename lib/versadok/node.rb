@@ -46,6 +46,7 @@ module VersaDok
       span: :inline,
       soft_break: :inline,
       hard_break: :inline,
+      inline_extension: :inline,
     }
 
     CONTENT_MODEL_MAP = { #:nodoc:
@@ -64,6 +65,7 @@ module VersaDok
       span: :inline,
       soft_break: :none,
       hard_break: :none,
+      inline_extension: :none,
     }
 
     attr_accessor :type

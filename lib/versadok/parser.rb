@@ -304,8 +304,8 @@ module VersaDok
     end
 
     INLINE_RE = /(?=
-                   \\[*_~^`\[\]\(\)\{\}\r\n \\]   # Match backslash escapes
-                   |[*_~^`\[\]\)\{\}]         # Match inline element start or end
+                   \\[*_~^`\[\]\(\)\{\}:\r\n \\]   # Match backslash escapes
+                   |[*_~^`\[\]\)\{\}:]         # Match inline element start or end
                    |#{EOL_RE_STR})        # Match end of line
                 /ox
 
@@ -347,23 +347,27 @@ module VersaDok
         when 96 # `
           parse_verbatim(start_of_line)
         when 91 # [
-          parse_link_opened
+          parse_bracketed_content_opened
         when 93 # ]
           case (byte = @scanner.scan_byte)
-          when 40, 91 # ( [
-            parse_link_data_opened(byte)
+          when 40 # (
+            parse_bracketed_data_opened(:destination, '](')
+          when 91 # [
+            parse_bracketed_data_opened(:reference, '][')
           when 123 # {
-            parse_span
+            parse_simple_span
           else
             @scanner.unscan
-            parse_link_data_closed(:reference, start_of_line)
+            parse_bracketed_data_closed(:reference, start_of_line)
           end
         when 41 # )
-          parse_link_data_closed(:destination, start_of_line)
+          parse_bracketed_data_closed(:destination, start_of_line)
         when 123 # {
           parse_inline_attribute_list_opened('{')
         when 125 # }
           parse_inline_attribute_list_closed(start_of_line)
+        when 58 # :
+          parse_inline_extension
         when 10, 13 # \n \r
           @scanner.scan_byte if byte == 13 && @scanner.peek_byte == 10
           break
@@ -415,38 +419,46 @@ module VersaDok
       end
     end
 
-    def parse_link_opened
-      @stack.append_child(Node.new(:link, properties: {marker: '['}))
+    def parse_bracketed_content_opened
+      @stack.append_child(Node.new(:span, properties: {marker: '['}))
     end
 
-    def parse_link_data_opened(byte)
-      link_type = (byte == 40 ? :destination : :reference)
-      if (index = @stack.node_index(:link))
-        @stack.append_child(Node.new(:link_data, content: +'',
+    def parse_bracketed_data_opened(data_type, marker = nil)
+      if (index = @stack.node_index(:span))
+        @stack.append_child(Node.new(:span_data, content: +'',
                                      properties: {category: :inline, content_model: :verbatim,
-                                                  marker: '', link_type: link_type, pos: @scanner.pos}))
+                                                  marker: '', data_type: data_type, pos: @scanner.pos}))
       end
-      add_text(link_type == :destination ? '](' : '][')
+      add_text(marker) if marker
     end
 
-    def parse_link_data_closed(type, start_of_line)
-      if (index = @stack.node_index(:link_data)) && @stack[index][:link_type] == type
-        link_data_node = @stack.remove_node(index)
-        start_pos = link_data_node[:pos] || start_of_line
-        link_data_node.content << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
-        link_data_node.content.gsub!(/\s*(?:#{EOL_RE_STR})/o, "")
+    def parse_bracketed_data_closed(data_type, start_of_line)
+      if (index = @stack.node_index(:span_data)) && @stack[index][:data_type] == data_type
+        data_node = @stack.remove_node(index)
+        start_pos = data_node[:pos] || start_of_line
+        data_node.content << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
+        data_node.content.gsub!(/\s*(?:#{EOL_RE_STR})/o, "")
 
-        index = @stack.node_index(:link)
-        @stack[index][type] = link_data_node.content
+        index = @stack.node_index(:span)
+        node = @stack[index]
+        if node[:marker] == '['
+          node.type = :link
+          node[data_type] = data_node.content
+        else
+          node.type = :inline_extension
+          node[:data] = data_node.content
+        end
+        @stack.close_node(index)
+      elsif (index = @stack.node_index(:span)) && @stack[index][:marker] != '['
+        @stack[index].type = :inline_extension
         @stack.close_node(index)
       else
-        add_text(type == :destination ? ')' : ']')
+        add_text(data_type == :destination ? ')' : ']')
       end
     end
 
-    def parse_span
-      if (index = @stack.node_index(:link))
-        @stack[index].type = :span
+    def parse_simple_span
+      if (index = @stack.node_index(:span))
         parse_inline_attribute_list_opened(']{')
       else
         add_text(']{')
@@ -454,12 +466,12 @@ module VersaDok
     end
 
     def parse_inline_attribute_list_opened(marker)
-      if ((child = @stack.last_child) && child.type != :text) || marker == ']{'
+      if ((child = @stack.last_child) && child.type != :text) || marker != '{'
         @stack.append_child(Node.new(:attribute_list, content: +'',
                                      properties: {category: :inline, content_model: :verbatim,
                                                   marker: marker, pos: @scanner.pos}))
       else
-        add_text('{')
+        add_text(marker)
       end
     end
 
@@ -469,9 +481,10 @@ module VersaDok
         start_pos = al_node[:pos] || start_of_line
         al_node.content << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
 
-        node = if al_node[:marker] == ']{'
+        node = if al_node[:marker] != '{'
                  index = @stack.node_index(:span)
                  node = @stack[index]
+                 node.type = :inline_extension unless node[:marker] == '['
                  @stack.close_node(index)
                  node
                else
@@ -480,6 +493,31 @@ module VersaDok
         parse_attribute_list_content(al_node.content, node.attributes ||= {})
       else
         add_text('}')
+      end
+    end
+
+    def parse_inline_extension
+      if @scanner.match?(/(\w+):/o)
+        @scanner.pos += @scanner.matched_size
+        name = @scanner[1]
+        properties = {name: name}
+        case (byte = @scanner.scan_byte)
+        when 91 # [
+          properties[:marker] = ":#{name}:["
+          @stack.append_child(Node.new(:span, properties: properties))
+        when 40 # (
+          properties[:marker] = ":#{name}:("
+          @stack.append_child(Node.new(:span, properties: properties))
+          parse_bracketed_data_opened(:destination)
+        when 123 # {
+          @stack.append_child(Node.new(:span, properties: properties))
+          parse_inline_attribute_list_opened(":#{name}:{")
+        else
+          @scanner.unscan
+          @stack.append_child(Node.new(:inline_extension, properties: properties), container: false)
+        end
+      else
+        add_text(':')
       end
     end
 

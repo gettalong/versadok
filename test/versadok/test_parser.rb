@@ -744,6 +744,11 @@ describe VersaDok::Parser do
       assert_equal('This { is} a drill', node.children[0].content)
     end
 
+    it "handles the marker character for inline extensions" do
+      node = parse_single("This \\:isnot: a drill", :paragraph, 1)
+      assert_equal('This :isnot: a drill', node.children[0].content)
+    end
+
     it "replaces an escaped line break with a hard line break element" do
       node = parse_single("This\\\nspace.\n", :paragraph, 3)
       assert_equal("This", node.children[0].content)
@@ -949,6 +954,85 @@ describe VersaDok::Parser do
     it "prevents inline markup closing across the ]{ marker (like verbatim)" do
       node = parse_single("Some [*strong]{#id* element", :paragraph, 1)
       assert_equal("Some [*strong]{#id* element", node.children[0].content)
+    end
+  end
+
+  describe "inline extension" do
+    it "can just be the extension name" do
+      node = parse_single("Some :extension: name", :paragraph, 3)
+      assert_equal(:inline_extension, node.children[1].type)
+    end
+
+    it "can have some markup content" do
+      node = parse_single("Some :extension:[with *strong* content] here", :paragraph, 3)
+      assert_equal(:inline_extension, node.children[1].type)
+      assert_equal(:strong, node.children[1].children[1].type)
+    end
+
+    it "can have some verbatim content" do
+      node = parse_single("Some :extension:(with *no strong* content) here", :paragraph, 3)
+      assert_equal(:inline_extension, node.children[1].type)
+      assert_equal('with *no strong* content', node.children[1][:data])
+    end
+
+    it "can use an attribute list" do
+      node = parse_single("Some :extension:{#id} here", :paragraph, 3)
+      assert_equal(:inline_extension, node.children[1].type)
+      assert_equal('id', node.children[1].attributes['id'])
+    end
+
+    it "can have some markup content and verbatim content" do
+      node = parse_single("Some :extension:[with *strong* content](*verbatim*) here", :paragraph, 3)
+      assert_equal(:inline_extension, node.children[1].type)
+      assert_equal(:strong, node.children[1].children[1].type)
+      assert_equal('*verbatim*', node.children[1][:data])
+    end
+
+    it "can have some markup content and an attribute list" do
+      node = parse_single("Some :extension:[with *strong* content]{#id} here", :paragraph, 3)
+      assert_equal(:inline_extension, node.children[1].type)
+      assert_equal(:strong, node.children[1].children[1].type)
+      assert_equal('id', node.children[1].attributes['id'])
+    end
+
+    it "can have verbatim content and an attribute list" do
+      node = parse_single("Some :extension:(*verbatim*){#id} here", :paragraph, 3)
+      assert_equal(:inline_extension, node.children[1].type)
+      assert_equal('*verbatim*', node.children[1][:data])
+      assert_equal('id', node.children[1].attributes['id'])
+    end
+
+    it "can have some markup content, verbatim content and an attribute list" do
+      node = parse_single("Some :extension:[with *strong* content](*verbatim*){#id} here", :paragraph, 3)
+      assert_equal(:inline_extension, node.children[1].type)
+      assert_equal(:strong, node.children[1].children[1].type)
+      assert_equal('*verbatim*', node.children[1][:data])
+      assert_equal('id', node.children[1].attributes['id'])
+    end
+
+    it "ignores the inline extension if the trailing colon is missing" do
+      node = parse_single("no :extension", :paragraph, 1)
+      assert_equal("no :extension", node.children[0].content)
+    end
+
+    it "ignores the inline extension if the name contains invalid characters" do
+      node = parse_single("no :extensiön:", :paragraph, 1)
+      assert_equal("no :extensiön:", node.children[0].content)
+    end
+
+    it "ignores the inline extension if the markup content is not closed" do
+      node = parse_single("no :extension:[here to see", :paragraph, 1)
+      assert_equal("no :extension:[here to see", node.children[0].content)
+    end
+
+    it "ignores the inline extension if the attribute list is not closed" do
+      node = parse_single("no :extension:{here to see", :paragraph, 1)
+      assert_equal("no :extension:{here to see", node.children[0].content)
+    end
+
+    it "prevents inline markup closing across the verbatim content marker" do
+      node = parse_single("Some *strong :extension:(here* element", :paragraph, 1)
+      assert_equal("Some *strong :extension:(here* element", node.children[0].content)
     end
   end
 end
