@@ -93,6 +93,14 @@ module VersaDok
       properties&.[](:content_model) || CONTENT_MODEL_MAP[@type]
     end
 
+    def unique_type
+      case type
+      when :header then :"header#{self[:level]}"
+      when :list then :"list_#{self[:marker]}"
+      else type
+      end
+    end
+
     def [](key)
       properties && properties[key]
     end
