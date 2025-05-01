@@ -35,29 +35,90 @@ module VersaDok
 
   class Parser
 
+    # The Stack holds the parsing context.
+    #
+    # == How the stack works
+    #
+    # Initially there is one node in the stack, the one given on initialization. This is usually the
+    # :root node. The current level, i.e. the index into the stack array, points to this container
+    # node.
+    #
+    # Every time a new *container* element is encountered, it is added to the stack at the correct
+    # place and the current level is appropriately adjusted. This place is either as the inner-most
+    # element (think parsing a strong element inside a paragraph) or at a higher level (think
+    # parsing a paragraph after a blockquote).
+    #
+    # As parsing is done line by line it is possible that the inner-most element is not yet
+    # closed. Here is an example document:
+    #
+    #   > This is a *strong
+    #   > paragraph*.
+    #
+    # After parsing the first line the stack looks like this:
+    #
+    #   root -> blockquote -> paragraph -> [strong]
+    #
+    # The strong element is the current container element with the current level pointing to
+    # it. Then when the next line is parsed, the stack looks initially like this:
+    #
+    #   [root] -> blockquote -> paragraph -> strong
+    #
+    # The parser then enters the elements in the stack while parsing. For example, it encounters the
+    # '>' marker and enters the blockquote element, adjusting the current level:
+    #
+    #   root -> [blockquote] -> paragraph -> strong
+    #
+    # Then the paragraph continuation line is parsed:
+    #
+    #   root -> blockquote -> paragraph -> [strong]
+    #
+    # As the strong element was the last element on the last line, the parser continues with it as
+    # the current element. Once it finds the closing marker, the element is closed and removed from
+    # the stack:
+    #
+    #   root -> blockquote -> [paragraph]
+    #
+    # The stack supports methods for adding, entering, closing and removing nodes as well as other
+    # needed methods.
     class Stack
 
+      # Creates a new Stack instance with +node+ as the base node.
       def initialize(node)
         @stack = [node]
         @level = 0
       end
 
+      # Returns the current container element.
+      #
+      # Note that this can be any element on the stack depending on the current parsing state.
       def container
         @stack[@level]
       end
 
+      # Returns +true+ if the current state of the stack represents being at a block boundary.
+      #
+      # A block boundary exists if the stack is currently at the start of a level or the last child
+      # element of the inner-most element is :blank.
+      #
+      # Note that this method is only useful during block parsing.
       def block_boundary?
         @level + 1 == @stack.size || @stack[-1].children.last&.type == :blank
       end
 
+      # Returns the last child of the current #container element.
       def last_child
         @stack[@level].children.last
       end
 
+      # Returns the element at the given stack +level+.
       def [](level)
         @stack[level]
       end
 
+      # Returns the stack level of the inner-most element of the given +type+ or +nil+ if no such
+      # element is on the stack.
+      #
+      # Note that this method stops searching at :verbatim elements.
       def node_level(type)
         @stack.rindex do |n|
           break if type != n.type && n.content_model == :verbatim
@@ -65,6 +126,10 @@ module VersaDok
         end
       end
 
+      # Closes the element at the given +level+ by removing it from the stack.
+      #
+      # All unclosed inline elements below the given level are deleted and their start marker
+      # treated as plain text.
       def close_node(level)
         (@stack.size - 1).downto(level + 1) do |i|
           break if @stack[i].category != :inline
@@ -86,6 +151,8 @@ module VersaDok
         @level = level - 1
       end
 
+      # Removes the node at the given +level+ from the stack and from its parent node and returns
+      # it.
       def remove_node(level)
         node = @stack[level]
         @stack[level - 1].children.delete(node)
@@ -94,6 +161,8 @@ module VersaDok
         node
       end
 
+      # Iterates in reverse order (from inner-most to outer-most) over all inline nodes having a
+      # verbatim content model and yields them.
       def each_inline_verbatim
         return to_enum(__method__) unless block_given?
         @stack.reverse_each do |node|
@@ -102,14 +171,20 @@ module VersaDok
         end
       end
 
+      # Resets the current level of the stack to the given +level+.
       def reset_level(level = 0)
         @level = (@stack.size + level) % @stack.size
       end
 
+      # Enters the last child of the current container element by increasing the current level.
+      #
+      # Note that this method doesn't check whether the last child is actually on the stack.
       def enter
         @level += 1
       end
 
+      # Enters the inner-most node in the stack that has an indentation smaller or equal to
+      # +indent+ by setting the current level appropriately.
       def enter_indented(indent)
         @temp = @level + 1
         while @temp < @stack.size && (el_indent = @stack[@temp][:indent]) && el_indent <= indent
@@ -118,6 +193,12 @@ module VersaDok
         end
       end
 
+      # Appends the given +node+ as child of the current container element.
+      #
+      # If +container+ is +true+, the node will be added to the stack and made the current container
+      # element by adjusting the current level.
+      #
+      # Note that the last child of the current container will also be closed (see #close_node).
       def append_child(node, container: true)
         close_node(@level + 1) unless @level + 1 == @stack.size
         @stack.last << node
@@ -127,14 +208,19 @@ module VersaDok
         end
       end
 
+      # Returns a simple string representation of the stack in the form of
+      #
+      #   root -> node_type -> [current_node_type] -> another_node_type
       def to_s
         @stack.map.with_index {|n, i| @level == i ? "[#{n.type}]" : n.type }.join(' -> ')
       end
 
     end
 
+    # The parsing context (see Context).
     attr_reader :context
 
+    # Creates a new Parser instance with the given +context+.
     def initialize(context)
       @context = context
       @scanner = StringScanner.new(''.b)
@@ -143,6 +229,9 @@ module VersaDok
       @line_no = 1
     end
 
+    # Parses the given string +str+ which is assumed to contain one or more complete lines.
+    #
+    # This method may be called multiple times. After the last time #finish must be called.
     def parse(str)
       @scanner.string = str
       until @scanner.eos?
@@ -152,6 +241,8 @@ module VersaDok
       self
     end
 
+    # Ensures that the parsing state is valid and represents the parsed lines. Returns the root node
+    # containing the result.
     def finish
       @stack.close_node(1)
       @stack[0]
@@ -165,6 +256,17 @@ module VersaDok
     # The single :blank node.
     BLANK_NODE = Node.new(:blank)
 
+    # Parses a single line for block elements.
+    #
+    # This method may be called multiple times for the same source line in case of nested
+    # elements. For example, the source line
+    #
+    #   > * list item
+    #
+    # will lead to three calls of this method: The initial call with all of the line, then for the
+    # part inside the blockquote and finally for the content of the list item.
+    #
+    # See #parse_continuation_line for the main inline parsing method.
     def parse_line
       @scanner.skip(/[ \t\v]*/)
       @current_indent = @scanner.matched_size
@@ -196,6 +298,7 @@ module VersaDok
       end
     end
 
+    # Parses the header element at the current position.
     def parse_header
       if @scanner.scan(/\#{1,6} /)
         level = @scanner.matched_size - 1
@@ -208,6 +311,7 @@ module VersaDok
       parse_continuation_line
     end
 
+    # Parses the blockquote element at the current position.
     def parse_blockquote
       if @scanner.match?("> ")
         if @stack.last_child&.type == :blockquote
@@ -239,6 +343,7 @@ module VersaDok
       end
     end
 
+    # Maps character codes to list item marker names.
     MARKER_MAP = {
       42 => :asterisk,
       43 => :plus,
@@ -246,6 +351,9 @@ module VersaDok
     }
     (48..57).each {|byte| MARKER_MAP[byte] = :decimal }
 
+    # Parses the list item at the current position.
+    #
+    # The +byte+ argument is the character code of the first byte of the list item marker.
     def parse_list_item(byte)
       if @scanner.match?(/[*+-] |(\d+)([.)]) /)
         marker = MARKER_MAP[byte]
@@ -269,6 +377,7 @@ module VersaDok
       end
     end
 
+    # Parses the extension block element at the current position.
     def parse_extension_block
       if @scanner.match?(/::(\w+):(?= |#{EOL_RE_STR})/o) && @stack.block_boundary?
         name = @scanner[1]
@@ -296,6 +405,7 @@ module VersaDok
       end
     end
 
+    # Parses the attribute list at the current position.
     def parse_attribute_list
       if @scanner.scan(/\{(#{AL_ANY_CHARS}+)\}[ \t\v]*(?:#{EOL_RE_STR})/o) && @stack.block_boundary?
         parse_attribute_list_content(@scanner[1], @attribute_list ||= {})
@@ -304,19 +414,25 @@ module VersaDok
       end
     end
 
+    # The regular expression for matching an inline element.
     INLINE_RE = /(?=
-                   \\[*_~^`\[\]\(\)\{\}:\r\n \\]   # Match backslash escapes
-                   |[*_~^`\[\]\)\{\}:]         # Match inline element start or end
-                   |#{EOL_RE_STR})        # Match end of line
+                   \\[*_~^`\[\]\(\)\{\}:\r\n \\] # Match backslash escapes
+                   |[*_~^`\[\]\)\{\}:]           # Match inline element start or end
+                   |#{EOL_RE_STR})               # Match end of line
                 /ox
 
+    # Maps all whitespace character codes to +true+.
     WHITESPACE_LUT = {9 => true, 10 => true, 11 => true, 13 => true, 32 => true, nil => true}
+
+    # Maps character codes to inline element types for the simple inline elements.
     SIMPLE_INLINE_NAME_MAP = {
       42  => :strong,
       95  => :emphasis,
       126 => :subscript,
       94  => :superscript,
     }
+
+    # Maps character codes of the simple inline element types to the corresponding character.
     SIMPLE_INLINE_CHAR_MAP = {
       42  => '*',
       95  => '_',
@@ -324,6 +440,11 @@ module VersaDok
       94  => '^',
     }
 
+    # Parses a continuation line containing inline elements.
+    #
+    # The name "continuation line" might be a bit misleading as the first line of a series of such
+    # lines is also parsed with this method. However, since parsing is done line by line it is not
+    # known whether the line is the first or one of the other lines.
     def parse_continuation_line
       if (@stack.block_boundary? || @stack[-1].type == :extension_block) &&
          @stack.container.content_model == :block
@@ -384,6 +505,7 @@ module VersaDok
       @line_no += 1
     end
 
+    # Parses a simple inline element that uses the same marker for opening and closing.
     def parse_inline_simple(type, marker, is_opening, is_closing)
       if (level = @stack.node_level(type)) && is_closing
         @stack.close_node(level)
@@ -394,9 +516,10 @@ module VersaDok
       end
     end
 
-    BACKSLASH_ESCAPE_MAP = Hash.new {|h, k| h[k] = k.chr }
+    BACKSLASH_ESCAPE_MAP = Hash.new {|h, k| h[k] = k.chr } # :nodoc:
     BACKSLASH_ESCAPE_MAP[32] = "\u00A0"
 
+    # Parses the backslash escape at the current position.
     def parse_backslash_escape
       case (byte = @scanner.scan_byte)
       when 10, 13 # \n \r
@@ -407,6 +530,11 @@ module VersaDok
       end
     end
 
+    # Parses the verbatim marker at the current position.
+    #
+    # The argument +start_of_line+ needs to contain the byte position of the start of the line. It
+    # is needed in case the verbatim marker is the closing marker and the opening marker was on a
+    # previous line.
     def parse_verbatim(start_of_line)
       if (level = @stack.node_level(:verbatim))
         node = @stack[level]
@@ -420,10 +548,12 @@ module VersaDok
       end
     end
 
+    # Parses the opening bracket marker for inline content.
     def parse_bracketed_content_opened
       @stack.append_child(Node.new(:span, properties: {marker: '['}))
     end
 
+    # Parses the opening bracket marker for verbatim data.
     def parse_bracketed_data_opened(data_type, marker = nil)
       if @stack.node_level(:span)
         @stack.append_child(Node.new(:span_data, content: +'',
@@ -434,6 +564,7 @@ module VersaDok
       end
     end
 
+    # Parsers the closing bracket marker for verbatim data.
     def parse_bracketed_data_closed(data_type, start_of_line)
       if (level = @stack.node_level(:span_data)) && @stack[level][:data_type] == data_type
         data_node = @stack.remove_node(level)
@@ -459,6 +590,7 @@ module VersaDok
       end
     end
 
+    # Parses a simple span element, i.e. an inline element associated with an attribute list.
     def parse_simple_span
       if @stack.node_level(:span)
         parse_inline_attribute_list_opened(']{')
@@ -467,6 +599,7 @@ module VersaDok
       end
     end
 
+    # Parses the opening marker of an inline attribute list.
     def parse_inline_attribute_list_opened(marker)
       if ((child = @stack.last_child) && child.type != :text) || marker != '{'
         @stack.append_child(Node.new(:attribute_list, content: +'',
@@ -477,6 +610,7 @@ module VersaDok
       end
     end
 
+    # Parses the closing marker of an inline attribute list.
     def parse_inline_attribute_list_closed(start_of_line)
       if (level = @stack.node_level(:attribute_list))
         al_node = @stack.remove_node(level)
@@ -498,6 +632,7 @@ module VersaDok
       end
     end
 
+    # Parses the inline extension at the current position.
     def parse_inline_extension
       if @scanner.match?(/(\w+):/o)
         @scanner.pos += @scanner.matched_size
@@ -523,6 +658,9 @@ module VersaDok
       end
     end
 
+    # Returns a new block node of the given +type+, +attributes+ and +properties+.
+    #
+    # This method is designed for block nodes and should not be used for inline nodes.
     def block_node(type, attributes: @attribute_list, properties: nil)
       if attributes && (refs = attributes.delete(:refs))
         properties ||= {}
@@ -532,6 +670,7 @@ module VersaDok
       Node.new(type, attributes: attributes, properties: properties)
     end
 
+    # Adds the given text to the current container element.
     def add_text(text)
       if @stack.last_child&.type == :text
         @stack.last_child.content << text
@@ -553,6 +692,7 @@ module VersaDok
       nil => /\\(\})/,
     }
 
+    # Parses the content of an attribute list and returns the hash with the attributes.
     def parse_attribute_list_content(str, attrs = {})
       str.strip!
       return attrs if str.empty?
