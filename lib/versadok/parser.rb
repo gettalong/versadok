@@ -58,7 +58,7 @@ module VersaDok
         @stack[level]
       end
 
-      def node_index(type)
+      def node_level(type)
         @stack.rindex do |n|
           break if type != n.type && n.content_model == :verbatim
           n.type == type
@@ -385,8 +385,8 @@ module VersaDok
     end
 
     def parse_inline_simple(type, marker, is_opening, is_closing)
-      if (index = @stack.node_index(type)) && is_closing
-        @stack.close_node(index)
+      if (level = @stack.node_level(type)) && is_closing
+        @stack.close_node(level)
       elsif is_opening
         @stack.append_child(Node.new(type, properties: {marker: marker}))
       else
@@ -408,10 +408,10 @@ module VersaDok
     end
 
     def parse_verbatim(start_of_line)
-      if (index = @stack.node_index(:verbatim))
-        node = @stack[index]
+      if (level = @stack.node_level(:verbatim))
+        node = @stack[level]
         node.children.clear
-        @stack.close_node(index)
+        @stack.close_node(level)
         start_pos = node[:pos] || start_of_line
         node.content << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
       else
@@ -425,7 +425,7 @@ module VersaDok
     end
 
     def parse_bracketed_data_opened(data_type, marker = nil)
-      if (index = @stack.node_index(:span))
+      if @stack.node_level(:span)
         @stack.append_child(Node.new(:span_data, content: +'',
                                      properties: {category: :inline, content_model: :verbatim,
                                                   marker: '', data_type: data_type, pos: @scanner.pos}))
@@ -434,14 +434,14 @@ module VersaDok
     end
 
     def parse_bracketed_data_closed(data_type, start_of_line)
-      if (index = @stack.node_index(:span_data)) && @stack[index][:data_type] == data_type
-        data_node = @stack.remove_node(index)
+      if (level = @stack.node_level(:span_data)) && @stack[level][:data_type] == data_type
+        data_node = @stack.remove_node(level)
         start_pos = data_node[:pos] || start_of_line
         data_node.content << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
         data_node.content.gsub!(/\s*(?:#{EOL_RE_STR})/o, "")
 
-        index = @stack.node_index(:span)
-        node = @stack[index]
+        level = @stack.node_level(:span)
+        node = @stack[level]
         if node[:marker] == '['
           node.type = :link
           node[data_type] = data_node.content
@@ -449,17 +449,17 @@ module VersaDok
           node.type = :inline_extension
           node[:data] = data_node.content
         end
-        @stack.close_node(index)
-      elsif (index = @stack.node_index(:span)) && @stack[index][:marker] != '['
-        @stack[index].type = :inline_extension
-        @stack.close_node(index)
+        @stack.close_node(level)
+      elsif (level = @stack.node_level(:span)) && @stack[level][:marker] != '['
+        @stack[level].type = :inline_extension
+        @stack.close_node(level)
       else
         add_text(data_type == :destination ? ')' : ']')
       end
     end
 
     def parse_simple_span
-      if (index = @stack.node_index(:span))
+      if @stack.node_level(:span)
         parse_inline_attribute_list_opened(']{')
       else
         add_text(']{')
@@ -477,16 +477,16 @@ module VersaDok
     end
 
     def parse_inline_attribute_list_closed(start_of_line)
-      if (index = @stack.node_index(:attribute_list))
-        al_node = @stack.remove_node(index)
+      if (level = @stack.node_level(:attribute_list))
+        al_node = @stack.remove_node(level)
         start_pos = al_node[:pos] || start_of_line
         al_node.content << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
 
         node = if al_node[:marker] != '{'
-                 index = @stack.node_index(:span)
-                 node = @stack[index]
+                 level = @stack.node_level(:span)
+                 node = @stack[level]
                  node.type = :inline_extension unless node[:marker] == '['
-                 @stack.close_node(index)
+                 @stack.close_node(level)
                  node
                else
                  @stack.last_child

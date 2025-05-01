@@ -51,32 +51,32 @@ describe VersaDok::Parser::Stack do
     end
   end
 
-  describe "node_index" do
+  describe "node_level" do
     it "returns the highest index of the node with the given type" do
       @stack.append_child(node(:strong))
       @stack.append_child(node(:strong))
       @stack.append_child(node(:other))
-      assert_equal(2, @stack.node_index(:strong))
+      assert_equal(2, @stack.node_level(:strong))
     end
 
     it "stops searching at elements containing verbatim content" do
       @stack.append_child(node(:strong))
       @stack.append_child(node(:verbatim))
       @stack.append_child(node(:other))
-      assert_nil(@stack.node_index(:strong))
+      assert_nil(@stack.node_level(:strong))
     end
 
     it "returns the top verbatim element if searched for" do
       @stack.append_child(node(:verbatim))
       @stack.append_child(node(:custom, properties: {content_model: :verbatim}))
       @stack.append_child(node(:other))
-      assert_equal(2, @stack.node_index(:custom))
-      assert_nil(@stack.node_index(:verbatim))
+      assert_equal(2, @stack.node_level(:custom))
+      assert_nil(@stack.node_level(:verbatim))
     end
 
     it "returns nil if no node with the given type exists" do
       @stack.append_child(node(:other))
-      assert_nil(@stack.node_index(:strong))
+      assert_nil(@stack.node_level(:strong))
     end
   end
 
@@ -85,7 +85,7 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:paragraph))
       @stack.append_child(node(:strong))
       @stack.append_child(node(:text, content: 'test'), container: false)
-      @stack.close_node(@stack.node_index(:strong))
+      @stack.close_node(@stack.node_level(:strong))
       assert_equal(:paragraph, @stack.container.type)
       @stack.reset_level(-1)
       assert_equal(:paragraph, @stack.container.type)
@@ -96,7 +96,7 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:second))
       @stack.append_child(node(:strong))
       @stack.append_child(node(:text, content: 'test'), container: false)
-      @stack.close_node(@stack.node_index(:first))
+      @stack.close_node(@stack.node_level(:first))
       assert_equal(:root, @stack.container.type)
       assert_equal(:second, @stack.container.children[0].children[0].type)
     end
@@ -107,7 +107,7 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:text, content: +'before'), container: false)
       @stack.append_child(node(:emphasis, properties: {marker: '_'}))
       @stack.append_child(node(:text, content: +'emph'), container: false)
-      @stack.close_node(@stack.node_index(:strong))
+      @stack.close_node(@stack.node_level(:strong))
       assert_equal(:paragraph, @stack.container.type)
       assert_equal('before_emph', @stack.container.children[0].children[0].content)
     end
@@ -117,7 +117,7 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:strong))
       @stack.append_child(node(:emphasis, properties: {marker: '_'}))
       @stack.append_child(node(:text, content: +'emph'), container: false)
-      @stack.close_node(@stack.node_index(:strong))
+      @stack.close_node(@stack.node_level(:strong))
       assert_equal(:paragraph, @stack.container.type)
       assert_equal('_emph', @stack.container.children[0].children[0].content)
     end
@@ -128,8 +128,8 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:emphasis, properties: {marker: '_'}))
       @stack.append_child(node(:nontext, properties: {marker: '+'}))
       @stack.append_child(node(:text, content: +'emph'), container: false)
-      @stack.close_node(@stack.node_index(:nontext))
-      @stack.close_node(@stack.node_index(:strong))
+      @stack.close_node(@stack.node_level(:nontext))
+      @stack.close_node(@stack.node_level(:strong))
       assert_equal(:paragraph, @stack.container.type)
       assert_equal('_', @stack.container.children[0].children[0].content)
     end
@@ -138,7 +138,7 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:paragraph))
       @stack.append_child(node(:strong))
       @stack.append_child(node(:emphasis, properties: {marker: '_'}))
-      @stack.close_node(@stack.node_index(:strong))
+      @stack.close_node(@stack.node_level(:strong))
       assert_equal(:paragraph, @stack.container.type)
       assert_equal('_', @stack.container.children[0].children[0].content)
     end
@@ -147,12 +147,12 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:paragraph))
       @stack.append_child(node(:strong))
       @stack.append_child(node(:emphasis))
-      @stack.close_node(@stack.node_index(:strong))
+      @stack.close_node(@stack.node_level(:strong))
 
       @stack.append_child(node(:strong))
       @stack.append_child(node(:text, content: +'emph'), container: false)
       @stack.append_child(node(:emphasis))
-      @stack.close_node(@stack.node_index(:strong))
+      @stack.close_node(@stack.node_level(:strong))
     end
   end
 
