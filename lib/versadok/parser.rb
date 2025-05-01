@@ -65,8 +65,8 @@ module VersaDok
         end
       end
 
-      def close_node(index)
-        (@stack.size - 1).downto(index + 1) do |i|
+      def close_node(level)
+        (@stack.size - 1).downto(level + 1) do |i|
           break if @stack[i].category != :inline
           children = @stack[i - 1].children
           node = children.delete_at(-1)
@@ -82,15 +82,15 @@ module VersaDok
             children.concat(node.children)
           end
         end
-        @stack.pop(@stack.size - index)
-        @level = index - 1
+        @stack.pop(@stack.size - level)
+        @level = level - 1
       end
 
-      def remove_node(index)
-        node = @stack[index]
-        @stack[index - 1].children.delete(node)
-        @stack.pop(@stack.size - index)
-        @level = index - 1
+      def remove_node(level)
+        node = @stack[level]
+        @stack[level - 1].children.delete(node)
+        @stack.pop(@stack.size - level)
+        @level = level - 1
         node
       end
 
