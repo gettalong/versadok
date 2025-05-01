@@ -428,9 +428,10 @@ module VersaDok
       if @stack.node_level(:span)
         @stack.append_child(Node.new(:span_data, content: +'',
                                      properties: {category: :inline, content_model: :verbatim,
-                                                  marker: '', data_type: data_type, pos: @scanner.pos}))
+                                                  marker: marker, data_type: data_type, pos: @scanner.pos}))
+      elsif marker
+        add_text(marker)
       end
-      add_text(marker) if marker
     end
 
     def parse_bracketed_data_closed(data_type, start_of_line)
