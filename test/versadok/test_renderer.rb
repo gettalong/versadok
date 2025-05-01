@@ -1,16 +1,17 @@
 require 'test_helper'
 require 'versadok/renderer'
+require 'versadok/context'
 require 'versadok/node'
 
 describe VersaDok::Renderer do
   before do
-    @renderer = VersaDok::Renderer.new
+    @context = VersaDok::Context.new
+    @renderer = VersaDok::Renderer.new(@context)
   end
 
   describe "initialize" do
-    it "allows passing an options hash" do
-      renderer = VersaDok::Renderer.new(data: :here)
-      assert_equal(:here, renderer.options[:data])
+    it "needs the context object as argument" do
+      assert_equal(@context, @renderer.context)
     end
   end
 

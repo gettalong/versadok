@@ -46,6 +46,9 @@ module VersaDok
     def parsing_finished!
     end
 
+    def handle(node)
+    end
+
   end
 
 end

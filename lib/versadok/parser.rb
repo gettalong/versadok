@@ -133,6 +133,8 @@ module VersaDok
 
     end
 
+    attr_reader :context
+
     def initialize(context)
       @context = context
       @scanner = StringScanner.new(''.b)

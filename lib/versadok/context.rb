@@ -56,6 +56,10 @@ module VersaDok
     private
 
     def load_builtin_extensions
+      #['template'].each do |name|
+      #  require_relative "extensions/#{name}"
+      #  add_extension(VersaDok::Extensions.const_get(name.capitalize))
+      #end
     end
 
   end

@@ -1,5 +1,6 @@
 require 'test_helper'
 require 'versadok/html_renderer'
+require 'versadok/context'
 require 'versadok/node'
 
 describe VersaDok::HTMLRenderer do
@@ -14,7 +15,8 @@ describe VersaDok::HTMLRenderer do
   end
 
   before do
-    @renderer = VersaDok::HTMLRenderer.new
+    @context = VersaDok::Context.new
+    @renderer = VersaDok::HTMLRenderer.new(@context)
     @simple_para = node(:paragraph, children: [node(:text, content: 'Simple paragraph')])
   end
 

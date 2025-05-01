@@ -305,7 +305,8 @@ end
 
 describe VersaDok::Parser do
   before do
-    @parser = VersaDok::Parser.new
+    @context = VersaDok::Context.new
+    @parser = VersaDok::Parser.new(@context)
   end
 
   def parse_single(str, type, child_count)
@@ -507,12 +508,13 @@ describe VersaDok::Parser do
   end
 
   describe "parse_extension_block" do
-    class TestExtension < VersaDok::Extension
+    class ParserTestExtension < VersaDok::Extension
       attr_reader :result
 
-      def parse_content?; false; end
-      def parse_line(str); (@lines ||= []) << str end
-      def parsing_finished!; @result = @lines.join end
+      def self.extension_names = ['mark']
+      def parse_content? = false
+      def parse_line(str) = (@lines ||= []) << str
+      def parsing_finished! = @result = @lines.join
     end
 
     it "parses the extension name" do
@@ -540,21 +542,21 @@ describe VersaDok::Parser do
     end
 
     it "defers parsing to the extension if specified" do
-      @parser.extensions["mark"] = ext = TestExtension.new
+      ext = @parser.context.add_extension(ParserTestExtension)
       node = parse_single("::mark:\n  para\n  graph\n     \n\n  > block", :extension_block, 0)
       assert_equal(:special, node.content_model)
       assert_equal("para\ngraph\n   \n\n> block", ext.result)
     end
 
     it "recognizes the 'indent' attribute when deferring parsing to the extension" do
-      @parser.extensions["mark"] = ext = TestExtension.new
+      ext = @parser.context.add_extension(ParserTestExtension)
       parse_single("::mark: indent=4\n    para\n      graph\n   \n\n    > block",
                    :extension_block, 0)
       assert_equal("para\n  graph\n\n\n> block", ext.result)
     end
 
     it "doesn't allow a custom 'indent' less than the default indentation" do
-      @parser.extensions["mark"] = ext = TestExtension.new
+      ext = @parser.context.add_extension(ParserTestExtension)
       parse_single("  ::mark: indent=2\n    para\n      graph\n   \n\n    > block",
                    :extension_block, 0)
       assert_equal(" para\n   graph\n\n\n > block", ext.result)

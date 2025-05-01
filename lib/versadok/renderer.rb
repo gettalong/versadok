@@ -30,6 +30,8 @@ module VersaDok
 
   class Renderer
 
+    attr_reader :context
+
     def initialize(context)
       @context = context
     end
