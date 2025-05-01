@@ -1,5 +1,6 @@
 require_relative 'versadok/data_dir'
 require_relative 'versadok/node'
 require_relative 'versadok/extension'
+require_relative 'versadok/context'
 require_relative 'versadok/parser'
 require_relative 'versadok/renderer'

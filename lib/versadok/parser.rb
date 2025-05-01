@@ -29,6 +29,7 @@
 require 'strscan'
 require_relative 'node'
 require_relative 'extension'
+require_relative 'context'
 
 module VersaDok
 
@@ -132,12 +133,10 @@ module VersaDok
 
     end
 
-    attr_reader :extensions
-
-    def initialize
+    def initialize(context)
+      @context = context
       @scanner = StringScanner.new(''.b)
       @stack = Stack.new(Node.new(:root))
-      @extensions = Hash.new(Extension.new)
       @attribute_list = nil
       @line_no = 1
     end
@@ -271,7 +270,7 @@ module VersaDok
     def parse_extension_block
       if @scanner.match?(/::(\w+):(?= |#{EOL_RE_STR})/o) && @stack.block_boundary?
         name = @scanner[1]
-        extension = @extensions[name]
+        extension = @context.extension(name)
         @scanner.pos += @scanner.matched_size
         attrs = parse_attribute_list_content(@scanner.scan_until(/#{EOL_RE_STR}/o), @attribute_list || {})
         parse_content = extension.parse_content?

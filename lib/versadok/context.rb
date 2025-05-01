@@ -26,24 +26,36 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #++
 
+require_relative 'extension'
+
 module VersaDok
 
-  class Extension
+  class Context
 
-    def self.extension_names = []
-
-    def initialize(context)
-      @context = context
+    def initialize
+      @extensions = {default: Extension.new(self)}
+      load_builtin_extensions
     end
 
-    def parse_content?
-      true
+    def extension(name)
+      @extensions.fetch(name) do
+        @extensions.fetch(:default) do
+          raise "No default extension set"
+        end
+      end
     end
 
-    def parse_line(str)
+    def add_extension(extension_class)
+      ext = extension_class.new(self)
+      extension_class.extension_names.each do |name|
+        @extensions[name] = ext
+      end
+      ext
     end
 
-    def parsing_finished!
+    private
+
+    def load_builtin_extensions
     end
 
   end

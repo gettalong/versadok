@@ -30,10 +30,8 @@ module VersaDok
 
   class Renderer
 
-    attr_reader :options
-
-    def initialize(options = {})
-      @options = options
+    def initialize(context)
+      @context = context
     end
 
     def render(root)
