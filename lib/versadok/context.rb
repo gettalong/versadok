@@ -30,13 +30,19 @@ require_relative 'extension'
 
 module VersaDok
 
+  # Provides context information to the Parser and Renderer.
   class Context
 
+    # Creates a new Context instance.
     def initialize
       @extensions = {default: Extension.new(self)}
       load_builtin_extensions
     end
 
+    # Returns the extension for the given extension +name+.
+    #
+    # If no extension with the given name exists, the :default extension is returned. If that is not
+    # set, an error is raised.
     def extension(name)
       @extensions.fetch(name) do
         @extensions.fetch(:default) do
@@ -45,6 +51,9 @@ module VersaDok
       end
     end
 
+    # Adds a new extension to the context.
+    #
+    # The +extension_class+ argument must be a class supporting the Extension interface.
     def add_extension(extension_class)
       ext = extension_class.new(self)
       extension_class.extension_names.each do |name|
