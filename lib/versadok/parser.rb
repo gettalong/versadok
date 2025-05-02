@@ -387,13 +387,13 @@ module VersaDok
         parse_content = extension.parse_content?
 
         indent = @current_indent + 1
-        indent = [indent, attrs.delete("indent")&.to_i || indent + 1].max unless parse_content
+        indent = [indent, attrs.delete("indent")&.to_i || indent + 1].max if parse_content
         properties = {name: name, indent: indent, refs: attrs.delete(:refs)}
-        properties[:content_model] = (parse_content ? :block : :special)
+        properties[:content_model] = (parse_content ? :special : :block)
         @stack.append_child(Node.new(:extension_block, properties: properties, attributes: attrs),
-                            container: parse_content)
+                            container: !parse_content)
 
-        unless parse_content
+        if parse_content
           re = /[ \t\v]{#{indent}}|[ \t\v]{0,#{indent - 1}}(?=#{EOL_RE_STR})/
           while !@scanner.eos? && @scanner.scan(re)
             extension.parse_line(@scanner.scan_until(/#{EOL_RE_STR}/o))

@@ -512,7 +512,7 @@ describe VersaDok::Parser do
       attr_reader :result
 
       def self.extension_names = ['mark']
-      def parse_content? = false
+      def parse_content? = true
       def parse_line(str) = (@lines ||= []) << str
       def parsing_finished! = @result = @lines.join
     end

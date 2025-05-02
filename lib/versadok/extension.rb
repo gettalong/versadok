@@ -37,7 +37,7 @@ module VersaDok
     end
 
     def parse_content?
-      true
+      false
     end
 
     def parse_line(str)
