@@ -63,7 +63,7 @@ module VersaDok
       emphasis: :inline,
       subscript: :inline,
       superscript: :inline,
-      text: :none,
+      text: :text,
       verbatim: :verbatim,
       link: :inline,
       span: :inline,
