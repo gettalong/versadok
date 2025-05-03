@@ -126,7 +126,7 @@ module VersaDok
 
       result = +''
       attr&.each_with_object(result) do |(k, v), result|
-        next if v.nil? || k == :refs || (k == 'id' && v.strip.empty?) || overrides&.key?(k)
+        next if v.nil? || (k == 'id' && v.strip.empty?) || overrides&.key?(k)
         result << " #{k}=\"#{escape_html(v.to_s)}\""
       end
       overrides&.each_with_object(result) do |(k, v), result|

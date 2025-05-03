@@ -40,10 +40,6 @@ describe VersaDok::HTMLRenderer do
       assert_equal("<p></p>\n", render(:paragraph, attr: {'key' => nil}))
     end
 
-    it "doesn't render the :refs key" do
-      assert_equal("<p></p>\n", render(:paragraph, attr: {refs: 'test'}))
-    end
-
     it "doesn't render the id key if the value is empty" do
       assert_equal("<p></p>\n", render(:paragraph, attr: {'id' => ''}))
     end
