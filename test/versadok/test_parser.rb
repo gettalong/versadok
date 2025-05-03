@@ -68,9 +68,9 @@ describe VersaDok::Parser::Stack do
 
     it "returns the top verbatim element if searched for" do
       @stack.append_child(node(:verbatim))
-      @stack.append_child(node(:span_data))
+      @stack.append_child(node(:temp_data))
       @stack.append_child(node(:other))
-      assert_equal(2, @stack.node_level(:span_data))
+      assert_equal(2, @stack.node_level(:temp_data))
       assert_nil(@stack.node_level(:verbatim))
     end
 
@@ -179,7 +179,7 @@ describe VersaDok::Parser::Stack do
     it "iterates over all inline verbatim elements in reverse order" do
       @stack.append_child(node(:paragraph))
       @stack.append_child(n1 = node(:verbatim))
-      @stack.append_child(n2 = node(:span_data))
+      @stack.append_child(n2 = node(:temp_data))
       assert_equal([n2, n1], @stack.each_inline_verbatim.to_a)
     end
   end

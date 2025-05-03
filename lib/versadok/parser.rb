@@ -555,7 +555,7 @@ module VersaDok
     # Parses the opening bracket marker for verbatim data.
     def parse_bracketed_data_opened(data_type, marker = nil)
       if @stack.node_level(:span)
-        @stack.append_child(Node.new(:span_data, content: +'',
+        @stack.append_child(Node.new(:temp_data, content: +'',
                                      properties: {marker: marker, data_type: data_type, pos: @scanner.pos}))
       elsif marker
         add_text(marker)
@@ -564,7 +564,7 @@ module VersaDok
 
     # Parsers the closing bracket marker for verbatim data.
     def parse_bracketed_data_closed(data_type, start_of_line)
-      if (level = @stack.node_level(:span_data)) && @stack[level][:data_type] == data_type
+      if (level = @stack.node_level(:temp_data)) && @stack[level][:data_type] == data_type
         data_node = @stack.remove_node(level)
         start_pos = data_node[:pos] || start_of_line
         data_node.content << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
@@ -600,7 +600,7 @@ module VersaDok
     # Parses the opening marker of an inline attribute list.
     def parse_inline_attribute_list_opened(marker)
       if ((child = @stack.last_child) && child.type != :text) || marker != '{'
-        @stack.append_child(Node.new(:attribute_list, content: +'',
+        @stack.append_child(Node.new(:temp_data, content: +'',
                                      properties: {marker: marker, pos: @scanner.pos}))
       else
         add_text(marker)
@@ -609,7 +609,7 @@ module VersaDok
 
     # Parses the closing marker of an inline attribute list.
     def parse_inline_attribute_list_closed(start_of_line)
-      if (level = @stack.node_level(:attribute_list))
+      if (level = @stack.node_level(:temp_data))
         al_node = @stack.remove_node(level)
         start_pos = al_node[:pos] || start_of_line
         al_node.content << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
