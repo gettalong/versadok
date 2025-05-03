@@ -906,6 +906,12 @@ describe VersaDok::Parser do
       assert_equal(" element", node.children[2].content)
     end
 
+    it "extracts the :refs key and puts it into the node properties" do
+      node = parse_single("Some *strong*{ref1 ref2} element", :paragraph, 3)
+      assert_equal(0, node.children[1].attributes.size)
+      assert_equal(['ref1', 'ref2'], node.children[1].properties[:refs])
+    end
+
     it "multiple attribute lists can be used" do
       node = parse_single("Some *strong*{#id}{.class} element", :paragraph, 3)
       assert_equal({'id' => "id", 'class' => 'class'}, node.children[1].attributes)

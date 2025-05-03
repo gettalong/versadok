@@ -627,6 +627,7 @@ module VersaDok
                  @stack.last_child
                end
         parse_attribute_list_content(al_node.content, node.attributes ||= {})
+        node[:refs] = node.attributes.delete(:refs) if node.attributes.key?(:refs)
       else
         add_text('}')
       end
