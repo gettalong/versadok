@@ -71,7 +71,7 @@ module VersaDok
       attribute_list: :verbatim,
       soft_break: :none,
       hard_break: :none,
-      inline_extension: :none,
+      inline_extension: :inline,
     }
 
     attr_accessor :type
