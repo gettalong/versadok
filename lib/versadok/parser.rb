@@ -389,7 +389,6 @@ module VersaDok
         indent = @current_indent + 1
         indent = [indent, attrs.delete("indent")&.to_i || indent + 1].max if parse_content
         properties = {name: name, indent: indent, refs: attrs.delete(:refs)}
-        properties[:content_model] = (parse_content ? :special : :block)
         @stack.append_child(Node.new(:extension_block, properties: properties, attributes: attrs),
                             container: !parse_content)
 

@@ -68,9 +68,9 @@ describe VersaDok::Parser::Stack do
 
     it "returns the top verbatim element if searched for" do
       @stack.append_child(node(:verbatim))
-      @stack.append_child(node(:custom, properties: {content_model: :verbatim}))
+      @stack.append_child(node(:span_data))
       @stack.append_child(node(:other))
-      assert_equal(2, @stack.node_level(:custom))
+      assert_equal(2, @stack.node_level(:span_data))
       assert_nil(@stack.node_level(:verbatim))
     end
 
@@ -177,10 +177,9 @@ describe VersaDok::Parser::Stack do
 
   describe "each_inline_verbatim" do
     it "iterates over all inline verbatim elements in reverse order" do
-      @stack.append_child(node(:container, properties: {content_model: :verbatim}))
       @stack.append_child(node(:paragraph))
       @stack.append_child(n1 = node(:verbatim))
-      @stack.append_child(n2 = node(:other, properties: {content_model: :verbatim, category: :inline}))
+      @stack.append_child(n2 = node(:span_data))
       assert_equal([n2, n1], @stack.each_inline_verbatim.to_a)
     end
   end
@@ -544,7 +543,6 @@ describe VersaDok::Parser do
     it "defers parsing to the extension if specified" do
       ext = @parser.context.add_extension(ParserTestExtension)
       node = parse_single("::mark:\n  para\n  graph\n     \n\n  > block", :extension_block, 0)
-      assert_equal(:special, node.content_model)
       assert_equal("para\ngraph\n   \n\n> block", ext.result)
     end
 
