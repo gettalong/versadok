@@ -281,7 +281,7 @@ module VersaDok
       when 42, 43, 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57 # * + - 0-9
         parse_list_item(byte)
       when 58 # :
-        parse_extension_block
+        parse_block_extension
       when 123 # {
         parse_attribute_list
       when 13, 10, nil # \r \n EOS
@@ -377,8 +377,8 @@ module VersaDok
       end
     end
 
-    # Parses the extension block element at the current position.
-    def parse_extension_block
+    # Parses the block extension element at the current position.
+    def parse_block_extension
       if @scanner.match?(/::(\w+):(?= |#{EOL_RE_STR})/o) && @stack.block_boundary?
         name = @scanner[1]
         extension = @context.extension(name)
@@ -389,7 +389,7 @@ module VersaDok
         indent = @current_indent + 1
         indent = [indent, attrs.delete("indent")&.to_i || indent + 1].max if parse_content
         properties = {name: name, indent: indent, refs: attrs.delete(:refs)}
-        @stack.append_child(Node.new(:extension_block, properties: properties, attributes: attrs),
+        @stack.append_child(Node.new(:block_extension, properties: properties, attributes: attrs),
                             container: !parse_content)
 
         if parse_content
@@ -445,7 +445,7 @@ module VersaDok
     # lines is also parsed with this method. However, since parsing is done line by line it is not
     # known whether the line is the first or one of the other lines.
     def parse_continuation_line
-      if (@stack.block_boundary? || @stack[-1].type == :extension_block) &&
+      if (@stack.block_boundary? || @stack[-1].type == :block_extension) &&
          @stack.container.content_model == :block
         @stack.append_child(block_node(:paragraph))
       end

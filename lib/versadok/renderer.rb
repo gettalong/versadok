@@ -61,7 +61,7 @@ module VersaDok
       when :emphasis then render_emphasis(node)
       when :subscript then render_subscript(node)
       when :superscript then render_superscript(node)
-      when :extension_block then render_extension_block(node)
+      when :block_extension then render_block_extension(node)
       when :inline_extension then render_inline_extension(node)
       else
         raise "Unsupported node type #{node.type}"
@@ -95,7 +95,7 @@ module VersaDok
     alias_method :render_soft_break, :render_blank
     alias_method :render_hard_break, :render_blank
     alias_method :render_verbatim, :render_blank
-    alias_method :render_extension_block, :render_blank
+    alias_method :render_block_extension, :render_blank
     alias_method :render_inline_extension, :render_blank
 
   end

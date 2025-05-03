@@ -506,7 +506,7 @@ describe VersaDok::Parser do
     end
   end
 
-  describe "parse_extension_block" do
+  describe "parse_block_extension" do
     class ParserTestExtension < VersaDok::Extension
       attr_reader :result
 
@@ -517,23 +517,23 @@ describe VersaDok::Parser do
     end
 
     it "parses the extension name" do
-      node = parse_single("::mark:", :extension_block, 0)
+      node = parse_single("::mark:", :block_extension, 0)
       assert_equal("mark", node[:name])
     end
 
     it "sets the indentation correctly" do
-      node = parse_single("  ::mark: indent=5", :extension_block, 0)
+      node = parse_single("  ::mark: indent=5", :block_extension, 0)
       assert_equal(3, node[:indent])
     end
 
     it "parses the attribute list on the marker line" do
-      node = parse_single("  ::mark: key=value .class #id ref", :extension_block, 0)
+      node = parse_single("  ::mark: key=value .class #id ref", :block_extension, 0)
       assert_equal({'class' => 'class', 'id' => 'id', 'key' => 'value'}, node.attributes)
       assert_equal(['ref'], node[:refs])
     end
 
     it "parses the content as block elements by default" do
-      node = parse_single("::mark:\n para\ngraph\n\n > block", :extension_block, 3)
+      node = parse_single("::mark:\n para\ngraph\n\n > block", :block_extension, 3)
       assert_equal(:block, node.content_model)
       assert_equal("para", node.children[0].children[0].content)
       assert_equal("graph", node.children[0].children[2].content)
@@ -542,21 +542,21 @@ describe VersaDok::Parser do
 
     it "defers parsing to the extension if specified" do
       ext = @parser.context.add_extension(ParserTestExtension)
-      node = parse_single("::mark:\n  para\n  graph\n     \n\n  > block", :extension_block, 0)
+      node = parse_single("::mark:\n  para\n  graph\n     \n\n  > block", :block_extension, 0)
       assert_equal("para\ngraph\n   \n\n> block", ext.result)
     end
 
     it "recognizes the 'indent' attribute when deferring parsing to the extension" do
       ext = @parser.context.add_extension(ParserTestExtension)
       parse_single("::mark: indent=4\n    para\n      graph\n   \n\n    > block",
-                   :extension_block, 0)
+                   :block_extension, 0)
       assert_equal("para\n  graph\n\n\n> block", ext.result)
     end
 
     it "doesn't allow a custom 'indent' less than the default indentation" do
       ext = @parser.context.add_extension(ParserTestExtension)
       parse_single("  ::mark: indent=2\n    para\n      graph\n   \n\n    > block",
-                   :extension_block, 0)
+                   :block_extension, 0)
       assert_equal(" para\n   graph\n\n\n > block", ext.result)
     end
 
@@ -570,7 +570,7 @@ describe VersaDok::Parser do
 
     it "creates an appropriate block for an invalidly unindented, directly following content line" do
       nodes = parse_multi("::para:\n# another", 2)
-      assert_equal(:extension_block, nodes[0].type)
+      assert_equal(:block_extension, nodes[0].type)
       assert_equal(:paragraph, nodes[1].type)
       assert_equal("# another", nodes[1].children[0].content)
     end

@@ -20,7 +20,7 @@ describe VersaDok::Renderer do
       renders_children = [:root, :paragraph, :header, :blockquote, :list, :list_item,
                           :span, :link, :strong, :emphasis, :subscript, :superscript]
       renders_nothing = [:blank, :text, :soft_break, :hard_break, :verbatim,
-                         :extension_block, :inline_extension]
+                         :block_extension, :inline_extension]
 
       [[renders_children, true], [renders_nothing, false]].each do |types, test_children|
         types.each do |type|
