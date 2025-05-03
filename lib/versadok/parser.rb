@@ -557,8 +557,7 @@ module VersaDok
     def parse_bracketed_data_opened(data_type, marker = nil)
       if @stack.node_level(:span)
         @stack.append_child(Node.new(:span_data, content: +'',
-                                     properties: {category: :inline, content_model: :verbatim,
-                                                  marker: marker, data_type: data_type, pos: @scanner.pos}))
+                                     properties: {marker: marker, data_type: data_type, pos: @scanner.pos}))
       elsif marker
         add_text(marker)
       end
@@ -603,8 +602,7 @@ module VersaDok
     def parse_inline_attribute_list_opened(marker)
       if ((child = @stack.last_child) && child.type != :text) || marker != '{'
         @stack.append_child(Node.new(:attribute_list, content: +'',
-                                     properties: {category: :inline, content_model: :verbatim,
-                                                  marker: marker, pos: @scanner.pos}))
+                                     properties: {marker: marker, pos: @scanner.pos}))
       else
         add_text(marker)
       end
