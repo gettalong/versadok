@@ -562,7 +562,7 @@ module VersaDok
       end
     end
 
-    # Parsers the closing bracket marker for verbatim data.
+    # Parses the closing bracket marker for verbatim data.
     def parse_bracketed_data_closed(data_type, start_of_line)
       if (level = @stack.node_level(:temp_data)) && @stack[level][:data_type] == data_type
         data_node = @stack.remove_node(level)
