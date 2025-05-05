@@ -30,9 +30,11 @@ require_relative 'renderer'
 
 module VersaDok
 
+  # The HTML renderer takes a VersaDok AST and returns an HTML representation.
   class HTMLRenderer < Renderer
 
-    def render(root)
+    # Renders the given +node+ into an appropriate HTML fragment.
+    def render(node)
       @out = +''
       super
       @out
@@ -40,12 +42,14 @@ module VersaDok
 
     private
 
+    # Renders a paragraph.
     def render_paragraph(para)
       @out << "<p#{html_attributes(para.attributes)}>"
       super
       @out << "</p>\n"
     end
 
+    # Renders a header.
     def render_header(header)
       el_name = case header[:level]
                 when 1 then 'h1'
@@ -60,12 +64,16 @@ module VersaDok
       @out << "</#{el_name}>\n"
     end
 
+    # Renders a blockquote.
     def render_blockquote(bq)
       @out << "<blockquote#{html_attributes(bq.attributes)}>\n"
       super
       @out << "</blockquote>\n"
     end
 
+    # Renders an ordered or unordered list.
+    #
+    # See: #render_list_item
     def render_list(list)
       el_name = (list[:marker] == :decimal ? 'ol' : 'ul')
       if list[:marker] == :decimal && list[:start] && list[:start] != 1
@@ -76,24 +84,33 @@ module VersaDok
       @out << "</#{el_name}>\n"
     end
 
+    # Renders a single list item within a list.
+    #
+    # See: #render_list
     def render_list_item(list_item)
       @out << "<li#{html_attributes(list_item.attributes)}>\n"
       super
       @out << "</li>\n"
     end
 
+    # Renders a text node.
+    #
+    # The method makes sure that all necessary characters are escaped.
     def render_text(text)
       @out << escape_html(text.content)
     end
 
+    # Renders a soft-break node.
     def render_soft_break(_node)
       @out << "\n"
     end
 
+    # Renders a hard-break node.
     def render_hard_break(_node)
       @out << "<br />\n"
     end
 
+    # Renders verbatim text.
     def render_verbatim(verbatim)
       @out << "<code#{html_attributes(verbatim.attributes)}>#{escape_html(verbatim.content)}</code>"
     end
@@ -109,6 +126,7 @@ module VersaDok
       METHOD_DEF
     end
 
+    # Renders a link node.
     def render_link(link)
       overrides = if link[:destination]
                     {'href' => link[:destination]}
@@ -121,6 +139,9 @@ module VersaDok
     end
 
     # Returns the HTML representation of the attributes +attr+.
+    #
+    # The argument +overrides+ can be used to override any of the keys in attributes. This allows
+    # the caller to modify the output without modifying the +attr+ hash.
     def html_attributes(attr, overrides = nil)
       return '' if (!attr || attr.empty?) && !overrides
 
@@ -135,7 +156,7 @@ module VersaDok
       result
     end
 
-    ESCAPE_MAP = {
+    ESCAPE_MAP = { #:nodoc:
       '<' => '&lt;',
       '>' => '&gt;',
       '&' => '&amp;',
