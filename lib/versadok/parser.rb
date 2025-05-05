@@ -251,7 +251,7 @@ module VersaDok
     private
 
     # All possible line endings plus EOS
-    EOL_RE_STR = "\\r\\n?|\\n|\\z"
+    EOL_RE_STR = "\\r\\n?|\\n|\\z" #:nodoc:
 
     # The single :blank node.
     BLANK_NODE = Node.new(:blank)
@@ -344,7 +344,7 @@ module VersaDok
     end
 
     # Maps character codes to list item marker names.
-    MARKER_MAP = {
+    MARKER_MAP = { #:nodoc:
       42 => :asterisk,
       43 => :plus,
       45 => :minus,
@@ -421,10 +421,10 @@ module VersaDok
                 /ox
 
     # Maps all whitespace character codes to +true+.
-    WHITESPACE_LUT = {9 => true, 10 => true, 11 => true, 13 => true, 32 => true, nil => true}
+    WHITESPACE_LUT = {9 => true, 10 => true, 11 => true, 13 => true, 32 => true, nil => true} #:nodoc:
 
     # Maps character codes to inline element types for the simple inline elements.
-    SIMPLE_INLINE_NAME_MAP = {
+    SIMPLE_INLINE_NAME_MAP = { #:nodoc:
       42  => :strong,
       95  => :emphasis,
       126 => :subscript,
@@ -432,7 +432,7 @@ module VersaDok
     }
 
     # Maps character codes of the simple inline element types to the corresponding character.
-    SIMPLE_INLINE_CHAR_MAP = {
+    SIMPLE_INLINE_CHAR_MAP = { #:nodoc:
       42  => '*',
       95  => '_',
       126 => '~',
@@ -677,14 +677,14 @@ module VersaDok
       end
     end
 
-    AL_ANY_CHARS = /\\\}|[^}]/
-    AL_NAME = /[^[:space:].#}]+/
-    AL_TYPE_KEY_VALUE_PAIR = /(#{AL_NAME})=(?:("|')((?:\\\}|\\\2|[^}\2])*?)\2|((?:\\\}|[^[:space:]}])+))/
-    AL_TYPE_REF = /([^[:space:]]+)/
-    AL_TYPE_CLASS = /\.(#{AL_NAME})/
-    AL_TYPE_ID = /#(#{AL_NAME})/
-    AL_TYPE_ANY = /(?:\A|\s)(?:#{AL_TYPE_KEY_VALUE_PAIR}|#{AL_TYPE_ID}|#{AL_TYPE_CLASS}|#{AL_TYPE_REF})(?=\s|\Z)/
-    VALUE_GSUB_RE_MAP = {
+    AL_ANY_CHARS = /\\\}|[^}]/ #:nodoc:
+    AL_NAME = /[^[:space:].#}]+/ #:nodoc:
+    AL_TYPE_KEY_VALUE_PAIR = /(#{AL_NAME})=(?:("|')((?:\\\}|\\\2|[^}\2])*?)\2|((?:\\\}|[^[:space:]}])+))/ #:nodoc:
+    AL_TYPE_REF = /([^[:space:]]+)/ #:nodoc:
+    AL_TYPE_CLASS = /\.(#{AL_NAME})/ #:nodoc:
+    AL_TYPE_ID = /#(#{AL_NAME})/ #:nodoc:
+    AL_TYPE_ANY = /(?:\A|\s)(?:#{AL_TYPE_KEY_VALUE_PAIR}|#{AL_TYPE_ID}|#{AL_TYPE_CLASS}|#{AL_TYPE_REF})(?=\s|\Z)/ #:nodoc:
+    VALUE_GSUB_RE_MAP = { #:nodoc:
       '"' => /\\(\}|")/,
       "'" => /\\(\}|')/,
       nil => /\\(\})/,
