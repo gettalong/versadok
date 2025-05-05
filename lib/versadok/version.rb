@@ -27,5 +27,6 @@
 #++
 
 module VersaDok
+  # The version of VersaDok.
   VERSION = '0.0.1'
 end
