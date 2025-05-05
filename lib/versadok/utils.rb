@@ -27,6 +27,8 @@
 #++
 
 module VersaDok
+
+  # The Utils module contains various small utility classes, modules and methods.
   module Utils
 
     # This module refines the core Hash class to provide the #deep_merge and #deep_merge! methods
