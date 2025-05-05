@@ -33,6 +33,15 @@ require_relative 'context'
 
 module VersaDok
 
+  # The Parser is responsible for parsing a VersaDok document into an abstract syntax tree of Node
+  # objects.
+  #
+  # == Usage
+  #
+  # The typical usage is like this:
+  #
+  #   context = VersaDok::Context.new
+  #   result = VersaDok::Parser.new(context).parse(document).finish
   class Parser
 
     # The Stack holds the parsing context.
