@@ -28,20 +28,47 @@
 
 module VersaDok
 
+  # A Renderer instance takes an abstract syntax tree of Node objects and turns it into a result
+  # document.
+  #
+  # This base renderer provides minimal default implementations for all rendering methods. It is
+  # structured like this:
+  #
+  # * The main entry point for rendering any node via a renderer instance is the #render
+  #   method. This method just delegates to #render_node by default but can be used to e.g. set up
+  #   needed objects.
+  #
+  # * The #render_node method is responsible for calling the appropriate type-specific node
+  #   rendering methods. For example, the root node is rendered via #render_root, the header node
+  #   via #render_header and so on.
+  #
+  # * Each of these node type specific rendering methods has a default implementation. Those node
+  #   types that are essentially collectons of nodes will defer to #render_children, all others will
+  #   just do nothing.
+  #
+  # * The method #render_children goes through each child in turn and calls #render_node for it.
+  #
+  # Subclasses can and should override any of these methods based on their needs.
   class Renderer
 
+    # The rendering context (see Context).
     attr_reader :context
 
+    # Creates a new renderer instance for the given +context+.
     def initialize(context)
       @context = context
     end
 
-    def render(root)
-      render_node(root)
+    # Renders the given +node+ (usually the :root node).
+    def render(node)
+      render_node(node)
     end
 
     private
 
+    # Renders a single +node+.
+    #
+    # This base method defers rendering to the node type specific method of the form +render_TYPE+.
     def render_node(node)
       case node.type
       when :root then render_root(node)
@@ -68,35 +95,38 @@ module VersaDok
       end
     end
 
+    # Implements the general case of rendering a node having child nodes.
     def render_root(node)
       render_children(node)
     end
 
+    # Implements the general case of rendering a node without children.
     def render_blank(blank)
     end
 
+    # Renders all children of +node+ in-order via #render_node.
     def render_children(node)
       node.children.each {|child| render_node(child) }
     end
 
-    alias_method :render_paragraph, :render_root
-    alias_method :render_header, :render_root
-    alias_method :render_blockquote, :render_root
-    alias_method :render_list, :render_root
-    alias_method :render_list_item, :render_root
-    alias_method :render_span, :render_root
-    alias_method :render_link, :render_root
-    alias_method :render_strong, :render_root
-    alias_method :render_emphasis, :render_root
-    alias_method :render_subscript, :render_root
-    alias_method :render_superscript, :render_root
+    alias_method :render_paragraph, :render_root #:nodoc:
+    alias_method :render_header, :render_root #:nodoc:
+    alias_method :render_blockquote, :render_root #:nodoc:
+    alias_method :render_list, :render_root #:nodoc:
+    alias_method :render_list_item, :render_root #:nodoc:
+    alias_method :render_span, :render_root #:nodoc:
+    alias_method :render_link, :render_root #:nodoc:
+    alias_method :render_strong, :render_root #:nodoc:
+    alias_method :render_emphasis, :render_root #:nodoc:
+    alias_method :render_subscript, :render_root #:nodoc:
+    alias_method :render_superscript, :render_root #:nodoc:
 
-    alias_method :render_text, :render_blank
-    alias_method :render_soft_break, :render_blank
-    alias_method :render_hard_break, :render_blank
-    alias_method :render_verbatim, :render_blank
-    alias_method :render_block_extension, :render_blank
-    alias_method :render_inline_extension, :render_blank
+    alias_method :render_text, :render_blank #:nodoc:
+    alias_method :render_soft_break, :render_blank #:nodoc:
+    alias_method :render_hard_break, :render_blank #:nodoc:
+    alias_method :render_verbatim, :render_blank #:nodoc:
+    alias_method :render_block_extension, :render_blank #:nodoc:
+    alias_method :render_inline_extension, :render_blank #:nodoc:
 
   end
 
