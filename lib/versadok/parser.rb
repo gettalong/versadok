@@ -119,6 +119,12 @@ module VersaDok
         @stack[@level].children.last
       end
 
+      # Returns the last appended block node, regardless of the current level (i.e. it could be
+      # beneath the current level).
+      def last_block_node
+        @stack.reverse_each {|node| return node if node.category == :block }
+      end
+
       # Returns the element at the given stack +level+.
       def [](level)
         @stack[level]
@@ -388,7 +394,8 @@ module VersaDok
 
     # Parses the block extension element at the current position.
     def parse_block_extension
-      if @scanner.match?(/::(\w+):(?= |#{EOL_RE_STR})/o) && @stack.block_boundary?
+      if @scanner.match?(/::(\w+):(?= |#{EOL_RE_STR})/o) &&
+         (@stack.block_boundary? || @stack.last_block_node.type == :block_extension)
         name = @scanner[1]
         extension = @context.extension(name)
         @scanner.pos += @scanner.matched_size

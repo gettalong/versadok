@@ -209,6 +209,17 @@ Whitespace is allowed before a block extension:
      ::extname:
        This is the content.
 
+A block extension doesn't need to start on a block boundary if the last block element regardless of
+nesting was a block extension:
+
+::example:
+  ::extname:
+  ::works:
+    Some nested paragraph.
+
+    ::nested_ext:
+  ::works_again:
+
 
 ### Attribute list
 

@@ -43,6 +43,15 @@ describe VersaDok::Parser::Stack do
     end
   end
 
+  describe "last_block_node" do
+    it "returns the last appended block node" do
+      assert_equal(:root, @stack.last_block_node.type)
+      @stack.append_child(node(:blockquote))
+      @stack.reset_level
+      assert_equal(:blockquote, @stack.last_block_node.type)
+    end
+  end
+
   describe "[]" do
     it "returns the node at the given level in the stack" do
       assert_equal(:root, @stack[0].type)
@@ -566,6 +575,27 @@ describe VersaDok::Parser do
       assert_equal("::para", nodes[0].children[0].content)
       assert_equal(:soft_break, nodes[0].children[1].type)
       assert_equal("another", nodes[0].children[2].content)
+    end
+
+    it "allows adding a block extension directly after another block extension" do
+      nodes = parse_multi("::para:\n::para2:", 2)
+      assert_equal(:block_extension, nodes[0].type)
+      assert_equal(:block_extension, nodes[1].type)
+    end
+
+    it "allows adding a block extension directly after nested block extension, regardless of level" do
+      nodes = parse_multi("::para:\n  ::para2:\n::para3:", 2)
+      assert_equal(:block_extension, nodes[0].type)
+      assert_equal(:block_extension, nodes[1].type)
+      assert_equal('para3', nodes[1][:name])
+    end
+
+    it "allows adding a block extension directly after another block extension that parses content" do
+      ext = @parser.context.add_extension(ParserTestExtension)
+      nodes = parse_multi("::mark:\n  ::para2:\n::para3:", 2)
+      assert_equal(:block_extension, nodes[0].type)
+      assert_equal(:block_extension, nodes[1].type)
+      assert_equal('para3', nodes[1][:name])
     end
 
     it "creates an appropriate block for an invalidly unindented, directly following content line" do
