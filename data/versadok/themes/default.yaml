@@ -1,0 +1,86 @@
+<% font_size ||= 10; font_scale ||= 1.2 %>
+base:
+  font: 'Times'
+  font_size: <%= font_size %>
+  line_spacing: 1.4
+base_text:
+base_box:
+  margin: [<%= font_size %>, 0, 0]
+paragraph:
+  base: :base_box
+paragraph_text:
+  base: :base_text
+
+header_text:
+  base: :base_text
+  font: Times bold
+header6:
+  base: :base_box
+header6_text:
+  base: :header_text
+  font_size: <%= font_size * font_scale %>
+header5:
+  base: :base_box
+header5_text:
+  base: :header_text
+  font_size: <%= font_size * font_scale**2 %>
+header4:
+  base: :base_box
+header4_text:
+  base: :header_text
+  font_size: <%= font_size * font_scale**3 %>
+header3:
+  base: :base_box
+  margin: [<%= font_size * 2 %>, 0, 0]
+header3_text:
+  base: :header_text
+  font_size: <%= font_size * font_scale**4 %>
+header2:
+  base: :base_box
+  margin: [<%= font_size * 3 %>, 0, 0]
+header2_text:
+  base: :header_text
+  font_size: <%= font_size * font_scale**5 %>
+header1:
+  base: :base_box
+  margin: [<%= font_size * 4 %>, 0, 0]
+header1_text:
+  base: :header_text
+  font_size: <%= font_size * font_scale**6 %>
+
+blockquote:
+  base: :base_box
+  padding: [0, 0, 0, 10]
+  border: {width: [0, 0, 0, 1]}
+
+list_asterisk:
+  base: :base_box
+  box_options:
+    marker_type: :disc
+    item_spacing: <%= font_size %>
+list_plus:
+  base: :base_box
+  box_options:
+    marker_type: :square
+    item_spacing: <%= font_size %>
+list_minus:
+  base: :base_box
+  box_options:
+    marker_type: :circle
+    item_spacing: <%= font_size %>
+list_decimal:
+  base: :base_box
+  box_options:
+    marker_type: :decimal
+    item_spacing: <%= font_size %>
+
+verbatim:
+  font: 'Courier'
+emphasis:
+  font_italic: true
+strong:
+  font_bold: true
+subscript:
+  subscript: true
+superscript:
+  superscript: true
