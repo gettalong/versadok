@@ -50,6 +50,10 @@ describe VersaDok::Parser::Stack do
       @stack.reset_level
       assert_equal(:blockquote, @stack.last_block_node.type)
     end
+
+    it "returns nil if no block node is on the stack" do
+      assert_nil(VersaDok::Parser::Stack.new(node(:test)).last_block_node)
+    end
   end
 
   describe "[]" do
@@ -853,6 +857,11 @@ describe VersaDok::Parser do
       assert_equal("link", link.children[0].content)
       assert_equal(:soft_break, link.children[1].type)
       assert_equal("content", link.children[2].content)
+    end
+
+    it "ignores the ]( combination if no opening bracket is before it" do
+      node = parse_single("Some ](content)", :paragraph, 1)
+      assert_equal("Some ](content)", node.children[0].content)
     end
 
     it "ignores right brackets that don't close the link content" do

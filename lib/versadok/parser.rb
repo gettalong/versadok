@@ -120,9 +120,10 @@ module VersaDok
       end
 
       # Returns the last appended block node, regardless of the current level (i.e. it could be
-      # beneath the current level).
+      # beneath the current level). Or +nil+ if no block node is on the stack.
       def last_block_node
         @stack.reverse_each {|node| return node if node.category == :block }
+        nil
       end
 
       # Returns the element at the given stack +level+.
@@ -573,7 +574,7 @@ module VersaDok
       if @stack.node_level(:span)
         @stack.append_child(Node.new(:temp_data, content: +'',
                                      properties: {marker: marker, data_type: data_type, pos: @scanner.pos}))
-      elsif marker
+      else # marker is never nil here
         add_text(marker)
       end
     end
