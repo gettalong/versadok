@@ -19,8 +19,7 @@ describe VersaDok::Renderer do
     it "calls the correct render_TYPE method" do
       renders_children = [:root, :paragraph, :header, :blockquote, :list, :list_item,
                           :span, :link, :strong, :emphasis, :subscript, :superscript]
-      renders_nothing = [:blank, :text, :soft_break, :hard_break, :verbatim,
-                         :block_extension, :inline_extension]
+      renders_nothing = [:blank, :text, :soft_break, :hard_break, :verbatim]
 
       [[renders_children, true], [renders_nothing, false]].each do |types, test_children|
         types.each do |type|
@@ -40,6 +39,21 @@ describe VersaDok::Renderer do
           assert(called)
         end
       end
+    end
+
+    it "uses an extension object for rendering block and inline extension nodes" do
+      extension = Class.new do
+        def self.extension_names = ['test']
+        def initialize(context) = nil
+        def render(node, renderer) = [node, renderer]
+      end
+      @context.add_extension(extension)
+
+      node = VersaDok::Node.new(:block_extension, properties: {name: 'test'})
+      assert_equal([node, @renderer], @renderer.render(node))
+
+      node = VersaDok::Node.new(:inline_extension, properties: {name: 'test'})
+      assert_equal([node, @renderer], @renderer.render(node))
     end
 
     it "fails for unsupported node types" do

@@ -88,8 +88,8 @@ module VersaDok
       when :emphasis then render_emphasis(node)
       when :subscript then render_subscript(node)
       when :superscript then render_superscript(node)
-      when :block_extension then render_block_extension(node)
-      when :inline_extension then render_inline_extension(node)
+      when :block_extension then render_extension(node)
+      when :inline_extension then render_extension(node)
       else
         raise "Unsupported node type #{node.type}"
       end
@@ -102,6 +102,13 @@ module VersaDok
 
     # Implements the general case of rendering a node without children.
     def render_blank(blank)
+    end
+
+    # Renders the node with the assigned extension.
+    #
+    # The actual rendering is done by the extension using the API of the renderer.
+    def render_extension(node)
+      @context.extension(node[:name]).render(node, self)
     end
 
     # Renders all children of +node+ in-order via #render_node.
@@ -125,8 +132,6 @@ module VersaDok
     alias_method :render_soft_break, :render_blank #:nodoc:
     alias_method :render_hard_break, :render_blank #:nodoc:
     alias_method :render_verbatim, :render_blank #:nodoc:
-    alias_method :render_block_extension, :render_blank #:nodoc:
-    alias_method :render_inline_extension, :render_blank #:nodoc:
 
   end
 
