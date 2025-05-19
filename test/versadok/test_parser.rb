@@ -471,6 +471,37 @@ describe VersaDok::Parser do
       assert_equal(4, list.children.last[:indent])
     end
 
+    it "uses correct indentation for nested lists" do
+      list = parse_single("   *   * item\n\n        para\n\n       para", :list, 1)
+      assert_equal(1, list.children.size)
+
+      list_item = list.children[0]
+      assert_equal(4, list_item[:indent])
+      assert_equal(2, list_item.children.size)
+      assert_equal(:list, list_item.children[0].type)
+      assert_equal(:paragraph, list_item.children[1].type)
+      assert_equal(1, list_item.children[0].children.size)
+
+      nested_item = list_item.children[0].children[0]
+      assert_equal(8, nested_item[:indent])
+      assert_equal(4, nested_item.children.size)
+      assert_equal(:paragraph, nested_item.children[0].type)
+      assert_equal(:blank, nested_item.children[1].type)
+      assert_equal(:paragraph, nested_item.children[2].type)
+      assert_equal(:blank, nested_item.children[3].type)
+    end
+
+    it "works when nested inside another block element" do
+      blockquote = parse_single(" > *   * item\n>\n>     para", :blockquote, 1)
+      assert_equal(1, blockquote.children.size)
+      list_item = blockquote.children[0].children[0]
+      assert_equal(1, list_item[:indent])
+      assert_equal(2, list_item.children.size)
+      nested_item = list_item.children[0].children[0]
+      assert_equal(5, nested_item[:indent])
+      assert_equal(2, nested_item.children.size)
+    end
+
     it "collects list items of the same marker type into one list" do
       parse_single("    * item 1\n* item 2", :list, 2)
     end
@@ -571,6 +602,12 @@ describe VersaDok::Parser do
       parse_single("  ::mark: indent=2\n    para\n      graph\n   \n\n    > block",
                    :block_extension, 0)
       assert_equal(" para\n   graph\n\n\n > block", ext.result)
+    end
+
+    it "works when nested inside another block element" do
+      blockquote = parse_single("> ::mark:\n>  another", :blockquote, 1)
+      assert_equal(:block_extension, blockquote.children[0].type)
+      assert_equal("another", blockquote.children[0].children[0].children[0].content)
     end
 
     it "ignores the marker if it doesn't constitute a correct marker" do

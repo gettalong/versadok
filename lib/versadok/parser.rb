@@ -252,6 +252,7 @@ module VersaDok
       @scanner.string = str
       until @scanner.eos?
         @stack.reset_level
+        @left_margin_pos = @scanner.pos
         parse_line
       end
       self
@@ -333,10 +334,12 @@ module VersaDok
         if @stack.last_child&.type == :blockquote
           @scanner.pos += 2
           @stack.enter
+          @left_margin_pos = @scanner.pos
           parse_line
         elsif @stack.block_boundary?
           @scanner.pos += 2
           @stack.append_child(block_node(:blockquote))
+          @left_margin_pos = @scanner.pos
           parse_line
         else
           parse_continuation_line
@@ -374,8 +377,9 @@ module VersaDok
       if @scanner.match?(/[*+-] |(\d+)([.)]) /)
         marker = MARKER_MAP[byte]
         last_child = @stack.last_child
+        indent = @scanner.pos - @left_margin_pos
         if last_child&.type == :list && last_child[:marker] == marker &&
-           last_child.children.last[:indent] >= @current_indent
+           last_child.children.last[:indent] >= indent
           @stack.enter
         elsif @stack.block_boundary?
           properties = {indent: 0, marker: marker}
@@ -386,7 +390,7 @@ module VersaDok
           return
         end
         @scanner.pos += @scanner.matched_size
-        @stack.append_child(Node.new(:list_item, properties: {indent: @current_indent + 1}))
+        @stack.append_child(Node.new(:list_item, properties: {indent: indent + 1}))
         parse_line
       else
         parse_continuation_line
@@ -399,13 +403,14 @@ module VersaDok
          (@stack.block_boundary? || @stack.last_block_node.type == :block_extension)
         name = @scanner[1]
         extension = @context.extension(name)
+        indent = (@scanner.pos - @left_margin_pos) + 1
         @scanner.pos += @scanner.matched_size
         attrs = parse_attribute_list_content(@scanner.scan_until(/#{EOL_RE_STR}/o), @attribute_list || {})
         parse_content = extension.parse_content?
 
-        indent = @current_indent + 1
         indent = [indent, attrs.delete("indent")&.to_i || indent + 1].max if parse_content
-        properties = {name: name, indent: indent, refs: attrs.delete(:refs)}
+        properties = {name: name, refs: attrs.delete(:refs)}
+        properties[:indent] = indent unless parse_content
         @stack.append_child(Node.new(:block_extension, properties: properties, attributes: attrs),
                             container: !parse_content)
 
