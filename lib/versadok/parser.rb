@@ -286,9 +286,7 @@ module VersaDok
     # See #parse_continuation_line for the main inline parsing method.
     def parse_line
       @scanner.skip(/[ \t\v]*/)
-      @current_indent = @scanner.matched_size
-
-      @stack.enter_indented(@current_indent) if @current_indent > 0
+      @stack.enter_indented(@scanner.matched_size) if @scanner.matched_size > 0
 
       case (byte = @scanner.peek_byte)
       when 35 # #
