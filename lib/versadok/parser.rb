@@ -240,7 +240,7 @@ module VersaDok
     def initialize(context)
       @context = context
       @scanner = StringScanner.new(''.b)
-      @stack = Stack.new(Node.new(:root))
+      @stack = Stack.new(Node.new(:root, properties: {indent: 0}))
       @attribute_list = nil
       @line_no = 1
     end
@@ -413,14 +413,48 @@ module VersaDok
                             container: !parse_content)
 
         if parse_content
-          re = /[ \t\v]{#{indent}}|[ \t\v]{0,#{indent - 1}}(?=#{EOL_RE_STR})/
-          while !@scanner.eos? && @scanner.scan(re)
-            extension.parse_line(@scanner.scan_until(/#{EOL_RE_STR}/o))
-          end
+          parse_verbatim_lines(indent) {|line| extension.parse_line(line) }
           extension.parsing_finished!
         end
       else
         parse_continuation_line
+      end
+    end
+
+    # Parses the lines at the curent position as verbatim, as long as possible.
+    #
+    # The +indent+ argument specifies the needed indentation of the verbatim lines at the current
+    # level.
+    def parse_verbatim_lines(indent)
+      # Build up the regexp for parsing the markers of the parent nodes. Only blockquotes and
+      # indentation based elements need to be considered (no other elements should be in the stack
+      # anyway).
+      re_prefix = []
+      (0..).each do |i|
+        break unless (element = @stack[i])
+        if element.type == :blockquote
+          re_prefix << "[ \\t\\v]*> "
+        elsif element[:indent] > 0
+          str = "[ \\t\\v]{#{element[:indent]}}"
+          if re_prefix[-1] && re_prefix[-1][-1] == '}'
+            re_prefix[-1] = str
+          else
+            re_prefix << str
+          end
+        end
+      end
+
+      # If the direct parent is indentation based, we need to remove it because +indent+ already
+      # takes care of this.
+      re_prefix.pop if re_prefix[-1] && re_prefix[-1][-1] == '}'
+      re_prefix = re_prefix.join
+
+      # For blank line recognition the trailing space in '> ' needs to be removed because otherwise
+      # the number of needed whitespace is off by one
+      re = /#{re_prefix}[ \t\v]{#{indent}}|#{re_prefix.rstrip}[ \t\v]{0,#{indent - 1}}(?=#{EOL_RE_STR})/
+      while !@scanner.eos? && @scanner.scan(re)
+        @line_no += 1
+        yield(@scanner.scan_until(/#{EOL_RE_STR}/o))
       end
     end
 

@@ -610,6 +610,22 @@ describe VersaDok::Parser do
       assert_equal("another", blockquote.children[0].children[0].children[0].content)
     end
 
+    it "works when nested inside another block element when deferring parsing to the extension" do
+      ext = @parser.context.add_extension(ParserTestExtension)
+      blockquote = parse_multi(<<~EOF, 3)
+      > *   *   > ::mark:
+      >      >   another
+      >      >
+      >  >   not this line
+
+      *  ::mark:
+            test
+
+         next
+      EOF
+      assert_equal("another\n\n test\n\n", ext.result)
+    end
+
     it "ignores the marker if it doesn't constitute a correct marker" do
       nodes = parse_multi("::para\n  another", 1)
       assert_equal(:paragraph, nodes[0].type)
