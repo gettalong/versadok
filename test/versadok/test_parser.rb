@@ -586,7 +586,7 @@ describe VersaDok::Parser do
 
     it "defers parsing to the extension if specified" do
       ext = @parser.context.add_extension(ParserTestExtension)
-      node = parse_single("::mark:\n  para\n  graph\n     \n\n  > block", :block_extension, 0)
+      parse_single("::mark:\n  para\n  graph\n     \n\n  > block", :block_extension, 0)
       assert_equal("para\ngraph\n   \n\n> block", ext.result)
     end
 
@@ -612,7 +612,7 @@ describe VersaDok::Parser do
 
     it "works when nested inside another block element when deferring parsing to the extension" do
       ext = @parser.context.add_extension(ParserTestExtension)
-      blockquote = parse_multi(<<~EOF, 3)
+      parse_multi(<<~EOF, 3)
       > *   *   > ::mark:
       >      >   another
       >      >
@@ -648,7 +648,7 @@ describe VersaDok::Parser do
     end
 
     it "allows adding a block extension directly after another block extension that parses content" do
-      ext = @parser.context.add_extension(ParserTestExtension)
+      @parser.context.add_extension(ParserTestExtension)
       nodes = parse_multi("::mark:\n  ::para2:\n::para3:", 2)
       assert_equal(:block_extension, nodes[0].type)
       assert_equal(:block_extension, nodes[1].type)
