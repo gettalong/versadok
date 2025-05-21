@@ -2,6 +2,7 @@ require 'test_helper'
 require 'versadok/pdf_renderer'
 require 'versadok/context'
 require 'versadok/node'
+require 'versadok/parser'
 require 'hexapdf/test_utils'
 
 describe VersaDok::PDFRenderer do
@@ -29,6 +30,21 @@ describe VersaDok::PDFRenderer do
       assert_kind_of(HexaPDF::Composer, composer)
       assert_equal([0, 0, 595, 841], composer.document.pages[0].box(:media).value.map(&:to_i))
       assert(composer.style?(:header2))
+    end
+
+    it "renders a simple document" do
+      doc = <<~EOF
+      test1
+
+      test2
+
+      > test1
+      >
+      > test2
+      EOF
+      result = @renderer.render(VersaDok::Parser.new(@context).parse(doc).finish,
+                                layout: @composer.document.layout)
+      assert_equal(3, result.size)
     end
   end
 

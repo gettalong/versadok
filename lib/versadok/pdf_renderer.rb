@@ -269,9 +269,12 @@ module VersaDok
     # array and this array is returned.
     def render_children(node)
       if block_given?
-        node.children.each {|child| yield(render_node(child)) }
+        node.children.each do |child|
+          result = render_node(child)
+          yield(result) if result
+        end
       else
-        node.children.flat_map {|child| render_node(child) }
+        node.children.flat_map {|child| render_node(child) }.compact
       end
     end
 
