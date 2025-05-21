@@ -295,6 +295,8 @@ module VersaDok
         parse_blockquote
       when 42, 43, 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57 # * + - 0-9
         parse_list_item(byte)
+      when 126 # ~
+        parse_code_block
       when 58 # :
         parse_block_extension
       when 123 # {
@@ -395,6 +397,23 @@ module VersaDok
       end
     end
 
+    # Parses the code block at the current position.
+    def parse_code_block
+      if @scanner.match?(/(~{3,})[ \t\v]*(?:#{EOL_RE_STR})/o)
+        indent = @scanner.pos - @left_margin_pos
+        @scanner.pos += @scanner.matched_size
+        content = +""
+        @stack.append_child(Node.new(:code_block, content: content), container: false)
+        stop_re = /^[ \t\v]*~{#{@scanner[1].size},}[ \t\v]*(?:#{EOL_RE_STR})/
+        parse_verbatim_lines(indent, indent_optional: true) do |line|
+          break if line =~ stop_re
+          content << line
+        end
+      else
+        parse_continuation_line
+      end
+    end
+
     # Parses the block extension element at the current position.
     def parse_block_extension
       if @scanner.match?(/::(\w+):(?= |#{EOL_RE_STR})/o) &&
@@ -424,8 +443,9 @@ module VersaDok
     # Parses the lines at the curent position as verbatim, as long as possible.
     #
     # The +indent+ argument specifies the needed indentation of the verbatim lines at the current
-    # level.
-    def parse_verbatim_lines(indent)
+    # level. If +indent_optional+ is +true+, the given +indent+ is optional but removed if it
+    # exists.
+    def parse_verbatim_lines(indent, indent_optional: false)
       # Build up the regexp for parsing the markers of the parent nodes. Only blockquotes and
       # indentation based elements need to be considered (no other elements should be in the stack
       # anyway).
@@ -444,14 +464,15 @@ module VersaDok
         end
       end
 
-      # If the direct parent is indentation based, we need to remove it because +indent+ already
-      # takes care of this.
-      re_prefix.pop if re_prefix[-1] && re_prefix[-1][-1] == '}'
+      # If the indent is not optional and the direct parent is indentation based, we need to remove
+      # it because +indent+ already takes care of this.
+      re_prefix.pop if !indent_optional && re_prefix[-1] && re_prefix[-1][-1] == '}'
       re_prefix = re_prefix.join
 
       # For blank line recognition the trailing space in '> ' needs to be removed because otherwise
       # the number of needed whitespace is off by one
-      re = /#{re_prefix}[ \t\v]{#{indent}}|#{re_prefix.rstrip}[ \t\v]{0,#{indent - 1}}(?=#{EOL_RE_STR})/
+      re = /(?-x:#{re_prefix})[ \t\v]{#{indent_optional ? "0,#{indent}" : indent}}|
+            #{re_prefix.rstrip}[ \t\v]{0,#{indent - 1}}(?=#{EOL_RE_STR})/x
       while !@scanner.eos? && @scanner.scan(re)
         @line_no += 1
         yield(@scanner.scan_until(/#{EOL_RE_STR}/o))
@@ -499,7 +520,8 @@ module VersaDok
     # lines is also parsed with this method. However, since parsing is done line by line it is not
     # known whether the line is the first or one of the other lines.
     def parse_continuation_line
-      if (@stack.block_boundary? || @stack[-1].type == :block_extension) &&
+      if (@stack.block_boundary? || @stack[-1].type == :block_extension ||
+          @stack[-1].children.last.type == :code_block) &&
          @stack.container.content_model == :block
         @stack.append_child(block_node(:paragraph))
       end

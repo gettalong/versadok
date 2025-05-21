@@ -550,6 +550,59 @@ describe VersaDok::Parser do
     end
   end
 
+  describe "parse_code_block" do
+    it "parses a simple code block" do
+      code_block = parse_single("~~~\nContents\n~~~", :code_block, 0)
+      assert_equal("Contents\n", code_block.content)
+    end
+
+    it "works when using optional whitespace after the tilde characters" do
+      code_block = parse_single("~~~    \nContents\n~~~   ", :code_block, 0)
+      assert_equal("Contents\n", code_block.content)
+    end
+
+    it "works when indenting the delimiter lines" do
+      code_block = parse_single("  ~~~\nContents\n   line2\n        ~~~", :code_block, 0)
+      assert_equal("Contents\n line2\n", code_block.content)
+    end
+
+    it "works when using more than three tilde characters" do
+      code_block = parse_single("~~~~\nContents\n~~~~~", :code_block, 0)
+      assert_equal("Contents\n", code_block.content)
+    end
+
+    it "works when there are more elements after the code block" do
+      elements = parse_multi("~~~\nContents\n~~~\ntest", 2)
+      assert_equal("Contents\n", elements[0].content)
+      assert_equal(:paragraph, elements[1].type)
+    end
+
+    it "uses all lines to the end if no closing delimiter is found" do
+      code_block = parse_single("~~~\nContents\n", :code_block, 0)
+      assert_equal("Contents\n", code_block.content)
+    end
+
+    it "works when nested inside block elements" do
+      block_quote = parse_single("> *   ~~~\n>  Contents\n>       line2\n>  ~~~", :blockquote, 1)
+      assert_equal("Contents\n line2\n", block_quote.children[0].children[0].children[0].content)
+    end
+
+    it "uses all lines to the end of the parent block if no closing delimiter is found" do
+      elements = parse_multi("* ~~~\n Contents\npara", 2)
+      assert_equal("Contents\n", elements[0].children[0].children[0].content)
+      assert_equal(:paragraph, elements[1].type)
+    end
+
+    it "ignores starting lines with not enough tilde characters" do
+      parse_single("~~\nContents", :paragraph, 3)
+    end
+
+    it "ignores closing lines containing other characters" do
+      code_block = parse_single("~~~\nContents\n~~~ test", :code_block, 0)
+      assert_equal("Contents\n~~~ test", code_block.content)
+    end
+  end
+
   describe "parse_block_extension" do
     class ParserTestExtension < VersaDok::Extension
       attr_reader :result

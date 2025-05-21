@@ -171,6 +171,32 @@ Whitespace is allowed before a list item and counts against the needed indentati
     Paragraph outside the list item.
 
 
+### Code block
+
+A line starting with three or more '~' characters followed by optional whitespace and the end of the
+line starts a delimited code block. All following lines belong to the code block until another line
+with at least the same amount of '~' characters or the end of the parent element.
+
+::example:
+  ~~~
+  This is a
+  code block.
+  ~~~
+
+  ~~~
+  This one is a code block, too.
+  Even though no closing line exists.
+
+Whitespace is allowed before the starting and closing lines. The whitespace before the starting line
+defines the amount of whitespace removed from each content line:
+
+::example:
+     ~~~
+  This line is not indented, nothing is removed.
+     This line is indented, the first three spaces are removed.
+  ~~~
+
+
 ### Block extension
 
 A line starting with two ':' characters, followed by an extension name, another ':' character and
