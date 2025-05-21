@@ -163,7 +163,7 @@ module VersaDok
 
     # Renders a list via HexaPDF's built-in list box.
     def render_list(list)
-      @layout.list(start_number: list[:start], style: block_style) do |container|
+      @layout.list(start_number: list[:start] || 1, style: block_style) do |container|
         render_children(list) {|result| container << result }
       end
     end

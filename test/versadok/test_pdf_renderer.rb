@@ -111,6 +111,13 @@ describe VersaDok::PDFRenderer do
       box = render(:list, marker: :asterisk)
       assert_kind_of(HexaPDF::Layout::ListBox, box)
       assert_equal(20, box.style.margin.top)
+      assert_equal(1, box.start_number)
+    end
+
+    it "works for ordered lists" do
+      box = render(:list, start: 3, marker: :decimal)
+      assert_kind_of(HexaPDF::Layout::ListBox, box)
+      assert_equal(3, box.start_number)
     end
 
     it "renders the children" do
