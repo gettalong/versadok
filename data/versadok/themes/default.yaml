@@ -74,6 +74,14 @@ list_decimal:
     marker_type: :decimal
     item_spacing: <%= font_size %>
 
+code_block:
+  base: :base_box
+  background_color: lightgrey
+  padding: <%= font_size %>
+
+code_block_text:
+  font: 'Courier'
+
 verbatim:
   font: 'Courier'
 emphasis:

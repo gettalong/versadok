@@ -93,6 +93,11 @@ module VersaDok
       @out << "</li>\n"
     end
 
+    # Renders a code block.
+    def render_code_block(code_block)
+      @out << "<pre#{html_attributes(code_block.attributes)}><code>#{code_block.content}</code></pre>\n"
+    end
+
     # Renders a text node.
     #
     # The method makes sure that all necessary characters are escaped.

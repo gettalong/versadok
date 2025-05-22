@@ -132,6 +132,15 @@ describe VersaDok::PDFRenderer do
     end
   end
 
+  describe "render_code_block" do
+    it "uses a TextBox with style :code_block" do
+      @composer.style(:code_block, font_size: 50)
+      box = render(:code_block, content: '')
+      assert_kind_of(HexaPDF::Layout::TextBox, box)
+      assert_equal(50, box.style.font_size)
+    end
+  end
+
   describe "text_style" do
     def check_style(**style_names)
       box = render(
@@ -148,6 +157,12 @@ describe VersaDok::PDFRenderer do
     it "uses the fully nested style name if defined" do
       @composer.style(:blockquote_paragraph_strong_emphasis_text, font_size: 50)
       check_style(font_size: 50)
+    end
+
+    it "adds the _text suffix to the fully nested style name if requested" do
+      @composer.style(:code_block_text, font_size: 50)
+      box = render(:code_block, content: '')
+      assert_equal(50, box.instance_variable_get(:@items)[0].style.font_size)
     end
 
     it "uses the nested block style name if the fully nested style name is not defined" do

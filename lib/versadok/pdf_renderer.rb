@@ -168,6 +168,12 @@ module VersaDok
       end
     end
 
+    # Renders a code block via HexaPDF's +text+ helper.
+    def render_code_block(code_block)
+      @layout.text(code_block.content, style: text_style(append_text_suffix: true),
+                   box_style: block_style)
+    end
+
     # Returns a hash that styles the given +text+.
     #
     # The return value is then used as item in the array passed to HexaPDF's +formatted_text+
@@ -229,8 +235,10 @@ module VersaDok
     end
 
     # Returns the appropriate HexaPDF::Layout::Style instance for the current text-based node.
-    def text_style
-      full_style_name = @stack_unique_types.join('_').intern
+    def text_style(append_text_suffix: false)
+      full_style_name = @stack_unique_types.join('_')
+      full_style_name << "_text" if append_text_suffix
+      full_style_name = full_style_name.intern
 
       if @layout.style?(full_style_name)
         style = @layout.style(full_style_name)

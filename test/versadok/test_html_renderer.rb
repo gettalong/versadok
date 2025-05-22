@@ -145,6 +145,18 @@ describe VersaDok::HTMLRenderer do
     end
   end
 
+  describe "render_code_block" do
+    it "renders the code block" do
+      assert_equal("<pre><code>Simple</code></pre>\n",
+                   render(:code_block, content: 'Simple'))
+    end
+
+    it "renders attributes" do
+      assert_equal("<pre class=\"class\"><code>Simple</code></pre>\n",
+                   render(:code_block, attr: {'class' => 'class'}, content: 'Simple'))
+    end
+  end
+
   describe "render_text" do
     it "escapes special HTML characters" do
       assert_equal("This &lt;is&gt; some &quot;list&quot; &amp;here",
