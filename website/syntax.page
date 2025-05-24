@@ -247,6 +247,23 @@ nesting was a block extension:
   ::works_again:
 
 
+### Reference link definition
+
+A reference link definition starts with a '[' character, followed by the reference, a ']' character,
+a ':' character, a space and the URL.
+
+::example:
+  [ref]: my_url.html
+
+The URL may be broken across lines in which case all continuation lines need to be indented by at
+least one whitespace character. Any trailing or leading whitespace as well as the line breaks
+themselves are removed:
+
+::example:
+  [ref]: this_is_
+   one_long_url.html
+
+
 ### Attribute list
 
 A line starting with a '{' character followed by a list of attributes, a '}' character, optional

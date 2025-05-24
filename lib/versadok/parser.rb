@@ -301,6 +301,8 @@ module VersaDok
         parse_block_extension
       when 123 # {
         parse_attribute_list
+      when 91 # [
+        parse_reference_link_definition
       when 13, 10, nil # \r \n EOS
         byte = @scanner.scan_byte
         @scanner.scan_byte if byte == 13 && @scanner.peek_byte == 10
@@ -435,6 +437,21 @@ module VersaDok
           parse_verbatim_lines(indent) {|line| extension.parse_line(line) }
           extension.parsing_finished!
         end
+      else
+        parse_continuation_line
+      end
+    end
+
+    # Parses the reference link definition at the current position.
+    def parse_reference_link_definition
+      if @scanner.match?(/\[([^\]]*)\]: (?=\S)/)
+        reference = @scanner[1]
+        indent = @scanner.pos - @left_margin_pos + 1
+        @scanner.pos += @scanner.matched_size
+        destination = @scanner.scan_until(/#{EOL_RE_STR}/o)
+        destination.rstrip!
+        parse_verbatim_lines(indent) {|line| line.strip!; destination << line }
+        @context.references[reference] = destination
       else
         parse_continuation_line
       end

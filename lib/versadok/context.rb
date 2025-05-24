@@ -33,9 +33,13 @@ module VersaDok
   # Provides context information to the Parser and Renderer.
   class Context
 
+    # The mapping of references to destinations for links.
+    attr_reader :references
+
     # Creates a new Context instance.
     def initialize
       @extensions = {default: Extension.new(self)}
+      @references = {}
       load_builtin_extensions
     end
 

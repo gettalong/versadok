@@ -716,6 +716,46 @@ describe VersaDok::Parser do
     end
   end
 
+  describe "parse_reference_link_definition" do
+    it "parses a simple link definition" do
+      parse_multi("[ref]: dest.html", 0)
+      assert_equal({"ref" => "dest.html"}, @context.references)
+    end
+
+    it "works when using optional leading whitespace" do
+      parse_multi("     [ref]: dest.html", 0)
+      assert_equal({"ref" => "dest.html"}, @context.references)
+    end
+
+    it "works with the destination continuing on the next lines" do
+      parse_multi("  [ref]: dest  \n   _continued  \n     _here", 0)
+      assert_equal({"ref" => "dest_continued_here"}, @context.references)
+    end
+
+    it "works when there are elements directly afterwards" do
+      elements = parse_multi("[ref]: dest.html\ntest", 1)
+      assert_equal({"ref" => "dest.html"}, @context.references)
+      assert_equal(:paragraph, elements[0].type)
+    end
+
+    it "works when nested inside block elements" do
+      parse_single("> *   [ref]: dest.html\n>      continuation", :blockquote, 1)
+      assert_equal({"ref" => "dest.htmlcontinuation"}, @context.references)
+    end
+
+    it "ignores lines with missing space" do
+      parse_single("[test]:", :paragraph, 1)
+    end
+
+    it "ignores lines with missing url" do
+      parse_single("[test]: ", :paragraph, 1)
+    end
+
+    it "ignores lines with missing colon" do
+      parse_single("[test] url", :paragraph, 1)
+    end
+  end
+
   describe "parse_attribute_list" do
     it "applies the attribute list to the next block element" do
       nodes = parse_multi("{#id}\npara\n\n{.class}\n# Header\n\n{ref}\n* list", 5)
