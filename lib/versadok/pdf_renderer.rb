@@ -213,7 +213,7 @@ module VersaDok
     def render_link(link)
       if link[:destination]
         @style_overrides.push(overlays: {link: {uri: link[:destination]}})
-      elsif (dest = @context.references[link[:reference]])
+      elsif (dest = @context.link_destinations[link[:reference]])
         @style_overrides.push(overlays: {link: {uri: dest}})
       end
       result = render_children(link)

@@ -719,28 +719,28 @@ describe VersaDok::Parser do
   describe "parse_reference_link_definition" do
     it "parses a simple link definition" do
       parse_multi("[ref]: dest.html", 0)
-      assert_equal({"ref" => "dest.html"}, @context.references)
+      assert_equal({"ref" => "dest.html"}, @context.link_destinations)
     end
 
     it "works when using optional leading whitespace" do
       parse_multi("     [ref]: dest.html", 0)
-      assert_equal({"ref" => "dest.html"}, @context.references)
+      assert_equal({"ref" => "dest.html"}, @context.link_destinations)
     end
 
     it "works with the destination continuing on the next lines" do
       parse_multi("  [ref]: dest  \n   _continued  \n     _here", 0)
-      assert_equal({"ref" => "dest_continued_here"}, @context.references)
+      assert_equal({"ref" => "dest_continued_here"}, @context.link_destinations)
     end
 
     it "works when there are elements directly afterwards" do
       elements = parse_multi("[ref]: dest.html\ntest", 1)
-      assert_equal({"ref" => "dest.html"}, @context.references)
+      assert_equal({"ref" => "dest.html"}, @context.link_destinations)
       assert_equal(:paragraph, elements[0].type)
     end
 
     it "works when nested inside block elements" do
       parse_single("> *   [ref]: dest.html\n>      continuation", :blockquote, 1)
-      assert_equal({"ref" => "dest.htmlcontinuation"}, @context.references)
+      assert_equal({"ref" => "dest.htmlcontinuation"}, @context.link_destinations)
     end
 
     it "ignores lines with missing space" do

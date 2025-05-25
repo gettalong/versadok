@@ -245,7 +245,7 @@ describe VersaDok::PDFRenderer do
     end
 
     it "applies a style override for existing reference links" do
-      @context.references['ref'] = 'dest.html'
+      @context.link_destinations['ref'] = 'dest.html'
       result = render(:link, reference: 'ref', children: [node(:text, content: 'Test')])
       assert_equal(1, result.size)
       assert_equal("Test", result[0][:text])

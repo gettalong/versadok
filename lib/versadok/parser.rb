@@ -451,7 +451,7 @@ module VersaDok
         destination = @scanner.scan_until(/#{EOL_RE_STR}/o)
         destination.rstrip!
         parse_verbatim_lines(indent) {|line| line.strip!; destination << line }
-        @context.references[reference] = destination
+        @context.link_destinations[reference] = destination
       else
         parse_continuation_line
       end
