@@ -135,8 +135,8 @@ module VersaDok
     def render_link(link)
       overrides = if link[:destination]
                     {'href' => link[:destination]}
-                  else
-                    #TODO
+                  elsif (dest = @context.references[link[:reference]])
+                    {'href'=> dest }
                   end
       @out << "<a#{html_attributes(link.attributes, overrides)}>"
       super

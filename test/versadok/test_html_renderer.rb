@@ -219,10 +219,16 @@ describe VersaDok::HTMLRenderer do
     end
 
     it "renders a link with a reference" do
+      @context.references['refspec'] = 'dest.html'
+      assert_equal("<a href=\"dest.html\">link content</a>",
+                   render(:link, reference: 'refspec',
+                          children: [node(:text, content: 'link content')]))
+    end
+
+    it "renders a link with an unknown reference" do
       assert_equal("<a>link content</a>",
                    render(:link, reference: 'refspec',
                           children: [node(:text, content: 'link content')]))
-      skip #TODO
     end
   end
 end

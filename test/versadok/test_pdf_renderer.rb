@@ -244,7 +244,15 @@ describe VersaDok::PDFRenderer do
       assert_equal([[:link, {uri: 'dest.html'}]], result[0][:style].overlays.layers)
     end
 
-    it "does nothing for reference links" do
+    it "applies a style override for existing reference links" do
+      @context.references['ref'] = 'dest.html'
+      result = render(:link, reference: 'ref', children: [node(:text, content: 'Test')])
+      assert_equal(1, result.size)
+      assert_equal("Test", result[0][:text])
+      assert_equal([[:link, {uri: 'dest.html'}]], result[0][:style].overlays.layers)
+    end
+
+    it "does nothing for unknown reference links" do
       result = render(:link, reference: 'ref', children: [node(:text, content: 'Test')])
       assert_equal(1, result.size)
       assert_equal("Test", result[0][:text])
