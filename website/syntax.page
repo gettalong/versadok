@@ -422,6 +422,16 @@ whitespace before the line break as well as the line break itself are removed.
   in the destination).
 
 
+### Image
+
+An image starts with a '!' character and is directly followed by a link.
+
+::example:
+  This is an ![image link](image.png).
+
+The content part is usually used for the alternative description of the image.
+
+
 ### Inline attribute list
 
 An inline attribute list has the same syntax as a block attribute list but needs to follow directly

@@ -919,6 +919,11 @@ describe VersaDok::Parser do
       assert_equal('This [ is] not( a )drill', node.children[0].content)
     end
 
+    it "handles the marker character for images" do
+      node = parse_single("This \\! is", :paragraph, 1)
+      assert_equal('This ! is', node.children[0].content)
+    end
+
     it "handles the marker characters for inline attribute lists" do
       node = parse_single("This \\{ is\\} a drill", :paragraph, 1)
       assert_equal('This { is} a drill', node.children[0].content)
@@ -1086,6 +1091,22 @@ describe VersaDok::Parser do
         node = parse_single("Some [*link][here*", :paragraph, 1)
         assert_equal("Some [*link][here*", node.children[0].content)
       end
+    end
+  end
+
+  describe "image" do
+    it "works as expected" do
+      node = parse_single("Some ![image alt text](url.html) comes", :paragraph, 3)
+      image = node.children[1]
+      assert_equal(:image, image.type)
+      assert_equal('url.html', image[:destination])
+      assert_equal("image alt text", image.children[0].content)
+    end
+
+    it "doesn't do anything if the exclamation mark isn't directly followed by a link" do
+      node = parse_single("Some ! [nothing](here.html) some", :paragraph, 3)
+      assert_equal(:link, node.children[1].type)
+      assert_equal('Some ! ', node.children[0].content)
     end
   end
 

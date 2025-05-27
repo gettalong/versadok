@@ -507,9 +507,9 @@ module VersaDok
 
     # The regular expression for matching an inline element.
     INLINE_RE = /(?=
-                   \\[*_~^`\[\]\(\)\{\}:\r\n \\] # Match backslash escapes
-                   |[*_~^`\[\]\)\{\}:]           # Match inline element start or end
-                   |#{EOL_RE_STR})               # Match end of line
+                   \\[*_~^`\[\]\(\)\{\}:!\r\n \\] # Match backslash escapes
+                   |[*_~^`\[\]\)\{\}:!]           # Match inline element start or end
+                   |#{EOL_RE_STR})                # Match end of line
                 /ox
 
     # Maps all whitespace character codes to +true+.
@@ -561,7 +561,14 @@ module VersaDok
         when 96 # `
           parse_verbatim(start_of_line)
         when 91 # [
-          parse_bracketed_content_opened
+          parse_bracketed_content_opened('[')
+        when 33 # !
+          if @scanner.peek_byte == 91
+            @scanner.pos += 1
+            parse_bracketed_content_opened('![')
+          else
+            add_text('!')
+          end
         when 93 # ]
           case (byte = @scanner.scan_byte)
           when 40 # (
@@ -641,8 +648,8 @@ module VersaDok
     end
 
     # Parses the opening bracket marker for inline content.
-    def parse_bracketed_content_opened
-      @stack.append_child(Node.new(:span, properties: {marker: '['}))
+    def parse_bracketed_content_opened(marker)
+      @stack.append_child(Node.new(:span, properties: {marker: marker}))
     end
 
     # Parses the opening bracket marker for verbatim data.
@@ -667,6 +674,9 @@ module VersaDok
         node = @stack[level]
         if node[:marker] == '['
           node.type = :link
+          node[data_type] = data_node.content
+        elsif node[:marker] == '!['
+          node.type = :image
           node[data_type] = data_node.content
         else
           node.type = :inline_extension
