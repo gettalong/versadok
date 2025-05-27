@@ -630,8 +630,8 @@ module VersaDok
     def parse_verbatim(start_of_line)
       if (level = @stack.node_level(:verbatim))
         node = @stack[level]
-        node.children.clear
         @stack.close_node(level)
+        node.children.clear
         start_pos = node[:pos] || start_of_line
         node.content << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
       else

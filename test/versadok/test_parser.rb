@@ -971,6 +971,15 @@ describe VersaDok::Parser do
       assert_equal(" z", node.children[2].content)
     end
 
+    it "works on a single line containing unclosed inline-like markup" do
+      node = parse_single("May *s `the _data` be", :paragraph, 3)
+      assert_equal("May *s ", node.children[0].content)
+      assert_equal(:verbatim, node.children[1].type)
+      assert_equal([], node.children[1].children)
+      assert_equal("the _data", node.children[1].content)
+      assert_equal(" be", node.children[2].content)
+    end
+
     it "works on a single line containing inline-like markup with unclosed node" do
       node = parse_single("May *s `t* *data* z", :paragraph, 3)
       assert_equal("May *s `t* ", node.children[0].content)
