@@ -256,7 +256,7 @@ describe VersaDok::PDFRenderer do
       result = render(:link, reference: 'ref', children: [node(:text, content: 'Test')])
       assert_equal(1, result.size)
       assert_equal("Test", result[0][:text])
-      assert_equal([], result[0][:style].each_property.to_a)
+      assert_equal([:font], result[0][:style].each_property.to_a.map(&:first))
     end
   end
 end

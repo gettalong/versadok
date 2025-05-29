@@ -266,6 +266,8 @@ module VersaDok
         @style_overrides.each {|hash| style.update(**hash) }
       end
 
+      @layout.resolve_font(style)
+
       style
     end
 
