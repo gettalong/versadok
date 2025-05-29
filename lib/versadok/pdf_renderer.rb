@@ -221,8 +221,21 @@ module VersaDok
       result
     end
 
-    # Returns the appropriate HexaPDF::Layout::Style instance for the current node which needs to be
-    # a block node.
+    # Returns an inline box wrapping an image box.
+    #
+    # The image must have either the width and/or the height set. Otherwise the height is adjusted
+    # according to the font size.
+    def render_image(image)
+      path = image[:destination] || @context.link_destinations[image[:reference]]
+      return unless path && File.exist?(path)
+
+      width = image.attributes&.[]('width').to_i
+      height = image.attributes&.[]('height').to_i
+      height = text_style.scaled_font_ascender if width == 0 && height == 0
+      @layout.inline_box(@layout.image(path, width: width, height: height, style: node_style))
+    end
+
+    # Returns the appropriate HexaPDF::Layout::Style instance for the current node.
     #
     # See the class documentation for details.
     def node_style

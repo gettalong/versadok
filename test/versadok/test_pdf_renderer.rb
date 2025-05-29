@@ -259,4 +259,26 @@ describe VersaDok::PDFRenderer do
       assert_equal([:font], result[0][:style].each_property.to_a.map(&:first))
     end
   end
+
+
+  describe "render_image" do
+    it "returns an inline box wrapping the image" do
+      result = render(:image, destination: File.join(TEST_DATA_DIR, 'white.png'),
+                      children: [node(:text, content: 'Test')])
+      assert_kind_of(HexaPDF::Layout::InlineBox, result)
+      assert_equal(6.83, result.height)
+    end
+
+    it "applies a style override for existing reference links" do
+      @context.link_destinations['ref'] = File.join(TEST_DATA_DIR, 'white.png')
+      result = render(:image, reference: 'ref', children: [node(:text, content: 'Test')])
+      assert_kind_of(HexaPDF::Layout::InlineBox, result)
+      assert_equal(6.83, result.height)
+    end
+
+    it "does nothing for unknown reference links" do
+      result = render(:image, reference: 'ref', children: [node(:text, content: 'Test')])
+      assert_nil(result)
+    end
+  end
 end

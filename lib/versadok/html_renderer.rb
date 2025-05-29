@@ -143,6 +143,25 @@ module VersaDok
       @out << "</a>"
     end
 
+    # Renders an image node.
+    def render_image(image)
+      overrides = {}
+
+      if image[:destination]
+        overrides['src'] = image[:destination]
+      elsif (dest = @context.link_destinations[image[:reference]])
+        overrides['src'] = dest
+      end
+
+      temp, @out = @out, +''
+      super
+      @out.gsub!(/<.*?>/, '')
+      overrides['alt'] = @out
+      @out = temp
+
+      @out << "<img#{html_attributes(image.attributes, overrides)} />"
+    end
+
     # Returns the HTML representation of the attributes +attr+.
     #
     # The argument +overrides+ can be used to override any of the keys in attributes. This allows

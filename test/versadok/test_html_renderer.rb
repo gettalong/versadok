@@ -231,4 +231,26 @@ describe VersaDok::HTMLRenderer do
                           children: [node(:text, content: 'link content')]))
     end
   end
+
+  describe "render_image" do
+    it "renders an image with a destination" do
+      assert_equal("<img src=\"target.png\" alt=\"image content\" />",
+                   render(:image, destination: 'target.png',
+                          children: [node(:text, content: 'image content')]))
+    end
+
+    it "renders an image with a reference" do
+      @context.link_destinations['refspec'] = 'target.png'
+      assert_equal("<img src=\"target.png\" alt=\"imagecontent\" />",
+                   render(:image, reference: 'refspec',
+                          children: [node(:text, content: 'image'),
+                                     node(:strong, children: [node(:text, content: 'content')])]))
+    end
+
+    it "renders an image with an unknown reference" do
+      assert_equal("<img alt=\"image content\" />",
+                   render(:image, reference: 'refspec',
+                          children: [node(:text, content: 'image content')]))
+    end
+  end
 end

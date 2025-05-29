@@ -26,6 +26,8 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #++
 
+require_relative 'error'
+
 module VersaDok
 
   # A Renderer instance takes an abstract syntax tree of Node objects and turns it into a result
@@ -50,6 +52,9 @@ module VersaDok
   #
   # Subclasses can and should override any of these methods based on their needs.
   class Renderer
+
+    # Used when an error occurs during rendering.
+    class Error < VersaDok::Error; end
 
     # The rendering context (see Context).
     attr_reader :context
@@ -85,6 +90,7 @@ module VersaDok
       when :verbatim then render_verbatim(node)
       when :span then render_span(node)
       when :link then render_link(node)
+      when :image then render_image(node)
       when :strong then render_strong(node)
       when :emphasis then render_emphasis(node)
       when :subscript then render_subscript(node)
@@ -128,6 +134,7 @@ module VersaDok
     alias_method :render_emphasis, :render_root #:nodoc:
     alias_method :render_subscript, :render_root #:nodoc:
     alias_method :render_superscript, :render_root #:nodoc:
+    alias_method :render_image, :render_root #:nodoc:
 
     alias_method :render_code_block, :render_blank #:nodoc:
     alias_method :render_text, :render_blank #:nodoc:

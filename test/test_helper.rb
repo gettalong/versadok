@@ -14,4 +14,6 @@ end
 
 require 'minitest/autorun'
 
+TEST_DATA_DIR = File.join(__dir__, 'data')
+
 Minitest::Test.make_my_diffs_pretty!
