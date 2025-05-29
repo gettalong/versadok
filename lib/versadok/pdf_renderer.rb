@@ -146,24 +146,24 @@ module VersaDok
 
     # Renders a paragraph via HexaPDF's +formatted_text+ helper.
     def render_paragraph(para)
-      @layout.formatted_text(render_children(para), box_style: block_style)
+      @layout.formatted_text(render_children(para), box_style: node_style)
     end
 
     # Renders a header via HexaPDF's +formatted_text+ helper.
     def render_header(header)
-      @layout.formatted_text(render_children(header), box_style: block_style)
+      @layout.formatted_text(render_children(header), box_style: node_style)
     end
 
     # Renders a blockquote by putting all child nodes into a container for styling.
     def render_blockquote(blockquote)
-      @layout.container(splitable: true, style: block_style) do |container|
+      @layout.container(splitable: true, style: node_style) do |container|
         render_children(blockquote) {|result| container << result }
       end
     end
 
     # Renders a list via HexaPDF's built-in list box.
     def render_list(list)
-      @layout.list(start_number: list[:start] || 1, style: block_style) do |container|
+      @layout.list(start_number: list[:start] || 1, style: node_style) do |container|
         render_children(list) {|result| container << result }
       end
     end
@@ -171,7 +171,7 @@ module VersaDok
     # Renders a code block via HexaPDF's +text+ helper.
     def render_code_block(code_block)
       @layout.text(code_block.content, style: text_style(append_text_suffix: true),
-                   box_style: block_style)
+                   box_style: node_style)
     end
 
     # Returns a hash that styles the given +text+.
@@ -225,7 +225,7 @@ module VersaDok
     # a block node.
     #
     # See the class documentation for details.
-    def block_style
+    def node_style
       full_style_name = @stack_unique_types.join('_').intern
       if @layout.style?(full_style_name)
         @layout.style(full_style_name)
