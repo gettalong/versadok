@@ -111,7 +111,7 @@ module VersaDok
       #
       # Note that this method is only useful during block parsing.
       def block_boundary?
-        @level + 1 == @stack.size || @stack[-1].children.last&.type == :blank
+        @stack[@level].children.empty? || @stack[-1].children.last&.type == :blank
       end
 
       # Returns the last child of the current #container element.
@@ -122,7 +122,14 @@ module VersaDok
       # Returns the last appended block node, regardless of the current level (i.e. it could be
       # beneath the current level). Or +nil+ if no block node is on the stack.
       def last_block_node
-        @stack.reverse_each {|node| return node if node.category == :block }
+        @stack.reverse_each do |node|
+          next unless node.category == :block
+          if node.children.last&.category == :block
+            return node.children.last
+          else
+            return node
+          end
+        end
         nil
       end
 
