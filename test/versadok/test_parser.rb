@@ -601,6 +601,13 @@ describe VersaDok::Parser do
       code_block = parse_single("~~~\nContents\n~~~ test", :code_block, 0)
       assert_equal("Contents\n~~~ test", code_block.content)
     end
+
+    it "creates a paragraph for the content directly following the closing line" do
+      nodes = parse_multi("~~~\ncode\n~~~\n# another", 2)
+      assert_equal(:code_block, nodes[0].type)
+      assert_equal(:paragraph, nodes[1].type)
+      assert_equal("# another", nodes[1].children[0].content)
+    end
   end
 
   describe "parse_block_extension" do
@@ -608,8 +615,9 @@ describe VersaDok::Parser do
       attr_reader :result
 
       def self.extension_names = ['mark']
+      def initialize(*) = super && @lines = []
       def parse_content? = true
-      def parse_line(str) = (@lines ||= []) << str
+      def parse_line(str) = @lines << str
       def parsing_finished! = @result = @lines.join
     end
 
@@ -641,6 +649,13 @@ describe VersaDok::Parser do
       ext = @parser.context.add_extension(ParserTestExtension)
       parse_single("::mark:\n  para\n  graph\n     \n\n  > block", :block_extension, 0)
       assert_equal("para\ngraph\n   \n\n> block", ext.result)
+    end
+
+    it "works when there is no content and parsing is deferred to the extension" do
+      ext = @parser.context.add_extension(ParserTestExtension)
+      nodes = parse_multi("::mark:\ntest", 2)
+      assert_equal("", ext.result)
+      assert_equal(:paragraph, nodes[1].type)
     end
 
     it "recognizes the 'indent' attribute when deferring parsing to the extension" do
@@ -708,8 +723,17 @@ describe VersaDok::Parser do
       assert_equal('para3', nodes[1][:name])
     end
 
-    it "creates an appropriate block for an invalidly unindented, directly following content line" do
+    it "creates a paragraph for an invalidly unindented, directly following content line" do
       nodes = parse_multi("::para:\n# another", 2)
+      assert_equal(:block_extension, nodes[0].type)
+      assert_equal(:paragraph, nodes[1].type)
+      assert_equal("# another", nodes[1].children[0].content)
+    end
+
+    it "creates a paragraph for an invalidly unindented, directly following content line" \
+       "for a block extension that parses content" do
+      @parser.context.add_extension(ParserTestExtension)
+      nodes = parse_multi("::mark:\n  content\n# another", 2)
       assert_equal(:block_extension, nodes[0].type)
       assert_equal(:paragraph, nodes[1].type)
       assert_equal("# another", nodes[1].children[0].content)

@@ -544,8 +544,9 @@ module VersaDok
     # lines is also parsed with this method. However, since parsing is done line by line it is not
     # known whether the line is the first or one of the other lines.
     def parse_continuation_line
-      if (@stack.block_boundary? || @stack[-1].type == :block_extension ||
-          @stack[-1].children.last.type == :code_block) &&
+      if (@stack.block_boundary? ||
+          (last_block_node = @stack.last_block_node).type == :block_extension ||
+          last_block_node.type == :code_block) &&
          @stack.container.content_model == :block
         @stack.append_child(block_node(:paragraph))
       end
