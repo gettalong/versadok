@@ -6,14 +6,14 @@ require 'versadok/parser'
 require 'hexapdf/test_utils'
 
 describe VersaDok::PDFRenderer do
-  def node(type, children: nil, attr: nil, content: nil, **properties)
-    VersaDok::Node.new(type, content: content, attributes: attr, properties: properties).tap do |n|
+  def node(type, children: nil, attributes: nil, content: nil, **properties)
+    VersaDok::Node.new(type, content: content, attributes: attributes, properties: properties).tap do |n|
       n.children.replace(children) if children
     end
   end
 
-  def render(type, children: nil, attr: nil, content: nil, **properties)
-    @renderer.render(node(type, children: children, content: content, attr: attr, **properties),
+  def render(type, children: nil, attributes: nil, content: nil, **properties)
+    @renderer.render(node(type, children: children, content: content, attributes: attributes, **properties),
                      layout: @composer.document.layout)
   end
 
@@ -274,6 +274,24 @@ describe VersaDok::PDFRenderer do
       result = render(:image, reference: 'ref', children: [node(:text, content: 'Test')])
       assert_kind_of(HexaPDF::Layout::InlineBox, result)
       assert_equal(6.83, result.height)
+    end
+
+    it "uses the width attribute" do
+      result = render(:image, destination: File.join(TEST_DATA_DIR, 'white.png'),
+                      attributes: {'width' => 40},
+                      children: [node(:text, content: 'Test')])
+      assert_kind_of(HexaPDF::Layout::InlineBox, result)
+      assert_equal(0, result.box.height)
+      assert_equal(40, result.box.width)
+    end
+
+    it "uses the height attribute" do
+      result = render(:image, destination: File.join(TEST_DATA_DIR, 'white.png'),
+                      attributes: {'width' => 40, 'height' => 40},
+                      children: [node(:text, content: 'Test')])
+      assert_kind_of(HexaPDF::Layout::InlineBox, result)
+      assert_equal(40, result.box.height)
+      assert_equal(40, result.box.width)
     end
 
     it "does nothing for unknown reference links" do
