@@ -1033,6 +1033,68 @@ describe VersaDok::Parser do
     end
   end
 
+  describe "parse_autolink" do
+    before do
+      @link = 'https://example.com'
+    end
+
+    it "works on a single line" do
+      node = parse_single("Some <#{@link}> here", :paragraph, 3)
+      assert_equal("Some ", node.children[0].content)
+      assert_equal(:link, node.children[1].type)
+      assert_equal(@link, node.children[1].children[0].content)
+      assert_equal(@link, node.children[1][:destination])
+      assert_equal(" here", node.children[2].content)
+    end
+
+    it "treats the < as text if the closing > is not found" do
+      node = parse_single("Some <#{@link} text here", :paragraph, 1)
+      assert_equal("Some <#{@link} text here", node.children[0].content)
+    end
+
+    it "treats the < as text if a not supported protocol follows" do
+      node = parse_single("Some <ftp://example.com> text here", :paragraph, 1)
+      assert_equal("Some <ftp://example.com> text here", node.children[0].content)
+    end
+
+    it "works on a single line containing inline-like markup" do
+      node = parse_single("Some *s <#{@link}/t* *data*> z", :paragraph, 3)
+      assert_equal("Some *s ", node.children[0].content)
+      assert_equal(:link, node.children[1].type)
+      assert_equal(" z", node.children[2].content)
+    end
+
+    it "works on a single line containing unclosed inline-like markup" do
+      node = parse_single("Some *s <#{@link} _better> be", :paragraph, 3)
+      assert_equal("Some *s ", node.children[0].content)
+      assert_equal(:link, node.children[1].type)
+      assert_equal(" be", node.children[2].content)
+    end
+
+    it "works on a single line containing inline-like markup with unclosed node" do
+      node = parse_single("Some *s <#{@link}* *data* z", :paragraph, 3)
+      assert_equal("Some *s <#{@link}* ", node.children[0].content)
+      assert_equal(:strong, node.children[1].type)
+      assert_equal(" z", node.children[2].content)
+    end
+
+    it "works on multiple lines" do
+      node = parse_single("Some <#{@link}/goes\n  here> and here", :paragraph, 3)
+      assert_equal(:link, node.children[1].type)
+      assert_equal("#{@link}/goeshere", node.children[1][:destination])
+      assert_equal(" and here", node.children[2].content)
+    end
+
+    it "works on multiple lines with unclosed node" do
+      node = parse_single("Some <#{@link}text *here\n  cont*inuing here", :paragraph, 3)
+      assert_equal("Some <#{@link}text ", node.children[0].content)
+      assert_equal(:strong, node.children[1].type)
+      assert_equal("here", node.children[1].children[0].content)
+      assert_equal(:soft_break, node.children[1].children[1].type)
+      assert_equal("cont", node.children[1].children[2].content)
+    end
+  end
+
   describe "link" do
     it "works if the link content is across lines" do
       node = parse_single("Some [link\n  content](here) comes", :paragraph, 3)

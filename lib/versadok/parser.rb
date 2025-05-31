@@ -514,9 +514,9 @@ module VersaDok
 
     # The regular expression for matching an inline element.
     INLINE_RE = /(?=
-                   \\[*_~^`\[\]\(\)\{\}:!\r\n \\] # Match backslash escapes
-                   |[*_~^`\[\]\)\{\}:!]           # Match inline element start or end
-                   |#{EOL_RE_STR})                # Match end of line
+                   \\[*_~^`\[\]\(\)\{\}\<\>:!\r\n \\] # Match backslash escapes
+                   |[*_~^`\[\]\)\{\}\<\>:!]           # Match inline element start or end
+                   |#{EOL_RE_STR})                    # Match end of line
                 /ox
 
     # Maps all whitespace character codes to +true+.
@@ -568,6 +568,10 @@ module VersaDok
           parse_backslash_escape
         when 96 # `
           parse_verbatim(start_of_line)
+        when 60 # <
+          parse_autolink_opened
+        when 62 # >
+          parse_autolink_closed(start_of_line)
         when 91 # [
           parse_bracketed_content_opened('[')
         when 33 # !
@@ -652,6 +656,36 @@ module VersaDok
       else
         @stack.append_child(Node.new(:verbatim, content: +'',
                                      properties: {marker: '`', pos: @scanner.pos}))
+      end
+    end
+
+    # Parses the start marker of an autolink.
+    def parse_autolink_opened
+      if !@stack.node_level(:autolink) && @scanner.match?(/https?:|mailto:/)
+        @stack.append_child(Node.new(:autolink, content: +'',
+                                     properties: {marker: '<', pos: @scanner.pos}))
+      else
+        add_text('<')
+      end
+    end
+
+    # Parses the closing marker of an autolink.
+    def parse_autolink_closed(start_of_line)
+      if (level = @stack.node_level(:autolink))
+        node = @stack[level]
+        @stack.close_node(level)
+        node.children.clear
+
+        start_pos = node[:pos] || start_of_line
+        node.content << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
+        dest = node.content.gsub(/\r\n?|\n/, '')
+
+        node.type = :link
+        node.content = nil
+        node[:destination] = dest
+        node.children << Node.new(:text, content: dest)
+      else
+        add_text('>')
       end
     end
 

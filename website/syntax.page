@@ -332,7 +332,7 @@ hard boundary for determining matching markers.
 
 In the above example the '\`' character would start a verbatim element. Therefore it acts as a hard
 boundary across which the second '*' won't match. Besides the verbatim element this is also true for
-the second part (the destination or reference) of a link.
+the second part (the destination or reference) of a link and the autolink.
 
 
 ### Literal text
@@ -420,6 +420,17 @@ whitespace before the line break as well as the line break itself are removed.
 ::example:
   This is [a link with](a linebreak
   in the destination).
+
+
+### Autolink
+
+An autolink starts with a '<' character, the URL, and a closing '>' character.
+
+::example:
+  This is an autolink <https://example.com/autolink>.
+
+The URL needs to use one of the protocols _http:_, _https:_, or _mailto:_. If it contains any line
+break characters, those are removed.
 
 
 ### Image
