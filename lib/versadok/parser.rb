@@ -408,7 +408,7 @@ module VersaDok
 
     # Parses the code block at the current position.
     def parse_code_block
-      if @scanner.match?(/(~{3,})[ \t\v]*(?:#{EOL_RE_STR})/o)
+      if @scanner.match?(/(~{3,})[ \t\v]*(?:#{EOL_RE_STR})/o) && @stack.block_boundary?
         indent = @scanner.pos - @left_margin_pos
         @scanner.pos += @scanner.matched_size
         content = +""

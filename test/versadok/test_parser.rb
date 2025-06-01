@@ -597,6 +597,10 @@ describe VersaDok::Parser do
       parse_single("~~\nContents", :paragraph, 3)
     end
 
+    it "ignores starting lines not on a block boundary" do
+      parse_single("paragraph\n~~~\nContents", :paragraph, 6)
+    end
+
     it "ignores closing lines containing other characters" do
       code_block = parse_single("~~~\nContents\n~~~ test", :code_block, 0)
       assert_equal("Contents\n~~~ test", code_block.content)
