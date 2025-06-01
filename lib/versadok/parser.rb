@@ -412,7 +412,7 @@ module VersaDok
         indent = @scanner.pos - @left_margin_pos
         @scanner.pos += @scanner.matched_size
         content = +""
-        @stack.append_child(Node.new(:code_block, content: content), container: false)
+        @stack.append_child(block_node(:code_block, content: content), container: false)
         stop_re = /^[ \t\v]*~{#{@scanner[1].size},}[ \t\v]*(?:#{EOL_RE_STR})/
         parse_verbatim_lines(indent, indent_optional: true) do |line|
           break if line =~ stop_re
@@ -435,9 +435,9 @@ module VersaDok
         parse_content = extension.parse_content?
 
         indent = [indent, attrs.delete("indent")&.to_i || indent + 1].max if parse_content
-        properties = {name: name, refs: attrs.delete(:refs)}
+        properties = {name: name}
         properties[:indent] = indent unless parse_content
-        @stack.append_child(Node.new(:block_extension, properties: properties, attributes: attrs),
+        @stack.append_child(block_node(:block_extension, properties: properties, attributes: attrs),
                             container: !parse_content)
 
         if parse_content
@@ -459,6 +459,7 @@ module VersaDok
         destination.rstrip!
         parse_verbatim_lines(indent) {|line| line.strip!; destination << line }
         @context.link_destinations[reference] = destination
+        @attribute_list = nil
       else
         parse_continuation_line
       end
@@ -804,13 +805,13 @@ module VersaDok
     # Returns a new block node of the given +type+, +attributes+ and +properties+.
     #
     # This method is designed for block nodes and should not be used for inline nodes.
-    def block_node(type, attributes: @attribute_list, properties: nil)
+    def block_node(type, content: nil, attributes: @attribute_list, properties: nil)
       if attributes && (refs = attributes.delete(:refs))
         properties ||= {}
         (properties[:refs] ||= []).concat(refs)
       end
       @attribute_list = nil
-      Node.new(type, attributes: attributes, properties: properties)
+      Node.new(type, content: content, attributes: attributes, properties: properties)
     end
 
     # Adds the given text to the current container element.

@@ -785,11 +785,36 @@ describe VersaDok::Parser do
   end
 
   describe "parse_attribute_list" do
-    it "applies the attribute list to the next block element" do
-      nodes = parse_multi("{#id}\npara\n\n{.class}\n# Header\n\n{ref}\n* list", 5)
-      assert_equal("id", nodes[0].attributes['id'])
-      assert_equal("class", nodes[2].attributes['class'])
-      assert_equal(["ref"], nodes[4].properties[:refs])
+    describe "applies the attribute list to the next block element" do
+      it "paragraph" do
+        node = parse_single("{#id}\npara", :paragraph, 1)
+        assert_equal("id", node.attributes['id'])
+      end
+
+      it "blockquote" do
+        node = parse_single("{#id}\n> para", :blockquote, 1)
+        assert_equal("id", node.attributes['id'])
+      end
+
+      it "header" do
+        node = parse_single("{#id}\n# header", :header, 1)
+        assert_equal("id", node.attributes['id'])
+      end
+
+      it "list" do
+        node = parse_single("{#id}\n* list", :list, 1)
+        assert_equal("id", node.attributes['id'])
+      end
+
+      it "code block" do
+        node = parse_single("{#id}\n~~~\ndata\n~~~", :code_block, 0)
+        assert_equal("id", node.attributes['id'])
+      end
+
+      it "block extension" do
+        node = parse_single("{.cls}\n::ext: .cls1", :block_extension, 0)
+        assert_equal("cls cls1", node.attributes['class'])
+      end
     end
 
     it "allows multiple attribute lists after another" do
@@ -797,9 +822,16 @@ describe VersaDok::Parser do
       assert_equal({"id" => "id", "class" => "class"}, node.attributes)
     end
 
-    it "ignores an attribute list if it is not directly before an element" do
-      nodes = parse_multi("{#id}\n\npara", 2)
-      assert_nil(nodes[1].attributes)
+    describe "ignores an attribute list if it is not directly before an element" do
+      it "blank line between" do
+        nodes = parse_multi("{#id}\n\npara", 2)
+        assert_nil(nodes[1].attributes)
+      end
+
+      it "link definition between" do
+        nodes = parse_multi("{#id}\n[link]: test.html\n\npara", 1)
+        assert_nil(nodes[0].attributes)
+      end
     end
 
     it "ignores an attribute list if it cannot be parsed (e.g. due to trailing content)" do
