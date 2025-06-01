@@ -157,14 +157,14 @@ module VersaDok
     # Renders a blockquote by putting all child nodes into a container for styling.
     def render_blockquote(blockquote)
       @layout.container(splitable: true, style: node_style) do |container|
-        render_children(blockquote) {|result| container << result }
+        render_children(blockquote, container)
       end
     end
 
     # Renders a list via HexaPDF's built-in list box.
     def render_list(list)
       @layout.list(start_number: list[:start] || 1, style: node_style) do |container|
-        render_children(list) {|result| container << result }
+        render_children(list, container)
       end
     end
 
@@ -286,15 +286,16 @@ module VersaDok
 
     # Renders the children of the +node+.
     #
-    # If a block is given, each child node is rendered via #render_node and the result yielded.
+    # If +container+ is given, each child node is rendered via #render_node and a non-nil result is
+    # added to the +container+ via #<<.
     #
-    # If no block is given, the results of calling #render_node for each child are put into a flat
-    # array and this array is returned.
-    def render_children(node)
-      if block_given?
+    # If +container+ is not given, the results of calling #render_node for each child are put into a
+    # compacted flat array and this array is returned.
+    def render_children(node, container = nil)
+      if container
         node.children.each do |child|
           result = render_node(child)
-          yield(result) if result
+          container << result if result
         end
       else
         node.children.flat_map {|child| render_node(child) }.compact
