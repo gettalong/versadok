@@ -157,6 +157,24 @@ describe VersaDok::HTMLRenderer do
     end
   end
 
+  describe "render_blockquote" do
+    it "renders a simple general block" do
+      assert_equal("<div>\n<p>Simple paragraph</p>\n</div>\n",
+                   render(:general_block,
+                          children: [@simple_para]))
+    end
+
+    it "renders attributes" do
+      assert_equal("<div class=\"class\">\n<p>Simple paragraph</p>\n</div>\n",
+                   render(:general_block, attr: {'class' => 'class'},
+                          children: [@simple_para]))
+    end
+
+    it "renders an empty general block" do
+      assert_equal("<div>\n</div>\n", render(:general_block))
+    end
+  end
+
   describe "render_text" do
     it "escapes special HTML characters" do
       assert_equal("This &lt;is&gt; some &quot;list&quot; &amp;here",

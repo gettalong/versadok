@@ -141,6 +141,22 @@ describe VersaDok::PDFRenderer do
     end
   end
 
+  describe "render_general_block" do
+    it "uses a splitable ContainerBox with style :general_block" do
+      @composer.style(:general_block, margin: 20)
+      box = render(:general_block)
+      assert_kind_of(HexaPDF::Layout::ContainerBox, box)
+      assert(box.splitable)
+      assert_equal(20, box.style.margin.top)
+    end
+
+    it "renders the children" do
+      box = render(:general_block, children: [node(:paragraph, children: [node(:text, content: "Test")])])
+      assert_equal(1, box.children.size)
+      assert_equal("Test", box.children[0].text)
+    end
+  end
+
   describe "text_style" do
     def check_style(**style_names)
       box = render(

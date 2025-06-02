@@ -174,6 +174,13 @@ module VersaDok
                    box_style: node_style)
     end
 
+    # Renders a general block by putting all child nodes into a container for styling.
+    def render_general_block(block)
+      @layout.container(splitable: true, style: node_style) do |container|
+        render_children(block, container)
+      end
+    end
+
     # Returns a hash that styles the given +text+.
     #
     # The return value is then used as item in the array passed to HexaPDF's +formatted_text+

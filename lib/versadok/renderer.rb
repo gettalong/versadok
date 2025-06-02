@@ -83,6 +83,7 @@ module VersaDok
       when :blockquote then render_blockquote(node)
       when :list then render_list(node)
       when :list_item then render_list_item(node)
+      when :general_block then render_general_block(node)
       when :code_block then render_code_block(node)
       when :text then render_text(node)
       when :soft_break then render_soft_break(node)
@@ -135,6 +136,7 @@ module VersaDok
     alias_method :render_subscript, :render_root #:nodoc:
     alias_method :render_superscript, :render_root #:nodoc:
     alias_method :render_image, :render_root #:nodoc:
+    alias_method :render_general_block, :render_root #:nodoc:
 
     alias_method :render_code_block, :render_blank #:nodoc:
     alias_method :render_text, :render_blank #:nodoc:

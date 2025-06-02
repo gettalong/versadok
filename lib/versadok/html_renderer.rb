@@ -98,6 +98,13 @@ module VersaDok
       @out << "<pre#{html_attributes(code_block.attributes)}><code>#{code_block.content}</code></pre>\n"
     end
 
+    # Renders a general block as div.
+    def render_general_block(block)
+      @out << "<div#{html_attributes(block.attributes)}>\n"
+      super
+      @out << "</div>\n"
+    end
+
     # Renders a text node.
     #
     # The method makes sure that all necessary characters are escaped.
