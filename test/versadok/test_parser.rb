@@ -228,17 +228,18 @@ describe VersaDok::Parser::Stack do
   describe "enter_indented" do
     it "changes the current level to the first one with at least the given indentation" do
       @stack.append_child(node(:list, properties: {indent: 0}))
-      @stack.append_child(node(:list_item1, properties: {indent: 2}))
+      @stack.append_child(node(:list_item, properties: {indent: 2}))
+      @stack.append_child(node(:general_block, properties: {indent: 0}))
       @stack.append_child(node(:list, properties: {indent: 0}))
-      @stack.append_child(node(:list_item2, properties: {indent: 4}))
+      @stack.append_child(node(:list_item, properties: {indent: 4}))
 
       @stack.reset_level
       @stack.enter_indented(2)
-      assert_equal(:list_item1, @stack.container.type)
+      assert_equal(:general_block, @stack.container.type)
 
       @stack.reset_level
       @stack.enter_indented(5)
-      assert_equal(:list_item2, @stack.container.type)
+      assert_equal(:list_item, @stack.container.type)
     end
 
     it "stops at elements that have no indent defined" do
@@ -611,6 +612,84 @@ describe VersaDok::Parser do
       assert_equal(:code_block, nodes[0].type)
       assert_equal(:paragraph, nodes[1].type)
       assert_equal("# another", nodes[1].children[0].content)
+    end
+  end
+
+  describe "parse_general_block" do
+    it "parses a simple general block" do
+      block = parse_single("<<<\nContent\n>>>", :general_block, 1)
+      assert_equal(:general_block, block.type)
+      assert_equal(:paragraph, block.children[0].type)
+    end
+
+    it "works when indenting the delimiter lines" do
+      block = parse_single("  <<<\nContents\n   line2\n        >>>", :general_block, 1)
+      assert_equal(:general_block, block.type)
+      assert_equal(:paragraph, block.children[0].type)
+    end
+
+    it "works when the closing delimiter line is missing" do
+      block = parse_single("<<<\nContents\n", :general_block, 1)
+      assert_equal(:general_block, block.type)
+      assert_equal(:paragraph, block.children[0].type)
+    end
+
+    it "works when there is a line directly after the closing line" do
+      elements = parse_multi("<<<\nContents\n>>>\n# test", 2)
+      assert_equal(:general_block, elements[0].type)
+      assert_equal(:paragraph, elements[1].type)
+    end
+
+    it "parses the attribute list on the staring line" do
+      block = parse_single("<<< key=value .class #id ref", :general_block, 0)
+      assert_equal({'class' => 'class', 'id' => 'id', 'key' => 'value'}, block.attributes)
+      assert_equal(['ref'], block[:refs])
+    end
+
+    it "ignores starting lines with no space after the marker" do
+      parse_single("<<<.high\nContents", :paragraph, 3)
+    end
+
+    it "ignores starting lines not on a block boundary" do
+      parse_single("paragraph\n<<<\nContents", :paragraph, 5)
+    end
+
+    it "ignores closing lines containing other characters" do
+      block = parse_single("<<<\nContents\n>>> test", :general_block, 1)
+      assert_equal(1, block.children.size)
+    end
+
+    describe "in indented element" do
+      it "parses a simple general block" do
+        list = parse_single("* <<<\n  Content\n  >>>", :list, 1)
+        assert_equal(1, list.children[0].children.size)
+        assert_equal(:general_block, list.children[0].children[0].type)
+        assert_equal(:paragraph, list.children[0].children[0].children[0].type)
+        assert_equal(1, list.children[0].children[0].children[0].children.size)
+        assert_equal("Content", list.children[0].children[0].children[0].children[0].content)
+      end
+
+      it "doesn't recognize an unindented closing line" do
+        list = parse_single("* <<<\n  Content\n>>>", :list, 1)
+        assert_equal(1, list.children[0].children.size)
+        assert_equal(:general_block, list.children[0].children[0].type)
+        assert_equal(:paragraph, list.children[0].children[0].children[0].type)
+        assert_equal(3, list.children[0].children[0].children[0].children.size)
+        assert_equal(">>>", list.children[0].children[0].children[0].children[2].content)
+      end
+
+      it "works when indenting the delimiter lines" do
+        list = parse_single("*    <<<\n  Contents\n   line2\n        >>>", :list, 1)
+        assert_equal(1, list.children[0].children.size)
+        assert_equal(:general_block, list.children[0].children[0].type)
+      end
+
+      it "works when the nested general block element has no children" do
+        elements = parse_multi("* <<<\n>>>", 2)
+        assert_equal(1, elements[0].children[0].children.size)
+        assert_equal(:general_block, elements[0].children[0].children[0].type)
+        assert_equal(">>>", elements[1].children[0].content)
+      end
     end
   end
 

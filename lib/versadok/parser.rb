@@ -211,7 +211,7 @@ module VersaDok
       def enter_indented(indent)
         @temp = @level + 1
         while @temp < @stack.size && (el_indent = @stack[@temp][:indent]) && el_indent <= indent
-          @level = @temp if el_indent > 0
+          @level = @temp if el_indent > 0 || @stack[@temp].content_model == :block
           @temp += 1
         end
       end
@@ -293,17 +293,23 @@ module VersaDok
     # See #parse_continuation_line for the main inline parsing method.
     def parse_line
       @scanner.skip(/[ \t\v]*/)
-      @stack.enter_indented(@scanner.matched_size) if @scanner.matched_size > 0
+      @stack.enter_indented(@scanner.matched_size)
 
       case (byte = @scanner.peek_byte)
       when 35 # #
         parse_header
       when 62 # >
-        parse_blockquote
+        if @scanner.match?(">>>")
+          parse_general_block_end
+        else
+          parse_blockquote
+        end
       when 42, 43, 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57 # * + - 0-9
         parse_list_item(byte)
       when 126 # ~
         parse_code_block
+      when 60 # <
+        parse_general_block_start
       when 58 # :
         parse_block_extension
       when 123 # {
@@ -418,6 +424,29 @@ module VersaDok
           break if line =~ stop_re
           content << line
         end
+      else
+        parse_continuation_line
+      end
+    end
+
+    # Parses the starting line of a general block at the current position.
+    def parse_general_block_start
+      if @scanner.match?(/<<<(?= |#{EOL_RE_STR})/o) && @stack.block_boundary?
+        @scanner.pos += @scanner.matched_size
+        attrs = parse_attribute_list_content(@scanner.scan_until(/#{EOL_RE_STR}/o), @attribute_list || {})
+        @stack.append_child(block_node(:general_block, attributes: attrs,
+                                       properties: {indent: @stack.container[:indent]}))
+      else
+        parse_continuation_line
+      end
+    end
+
+    # Parses the closing line of a general block at the current position.
+    def parse_general_block_end
+      indent = @scanner.pos - @left_margin_pos
+      if (level = @stack.node_level(:general_block)) && indent >= @stack[level][:indent] &&
+         @scanner.skip(/>>>[ \t\v]*(?:#{EOL_RE_STR})/o)
+        @stack.close_node(level)
       else
         parse_continuation_line
       end
@@ -547,7 +576,7 @@ module VersaDok
     def parse_continuation_line
       if (@stack.block_boundary? ||
           (last_block_node = @stack.last_block_node).type == :block_extension ||
-          last_block_node.type == :code_block) &&
+          last_block_node.type == :code_block || last_block_node.type == :general_block) &&
          @stack.container.content_model == :block
         @stack.append_child(block_node(:paragraph))
       end

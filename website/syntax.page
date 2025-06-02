@@ -197,6 +197,49 @@ defines the amount of whitespace removed from each content line:
   ~~~
 
 
+### General block
+
+A line starting with three '<' characters and either a space or the end of the line starts a general
+block. The rest of the line is parsed as an attribute list. All following lines belong to the
+general block until either a line containing only three '>' characters (the closing line) is found
+or the end of the document or container.
+
+A general block encapsulates block contents and acts as a container.
+
+::example:
+  <<< .warning
+  Paragraph in general block
+  >>>
+
+The closing line is not necessary if the general block should end with the document or container:
+
+::example:
+  <<<
+  Paragraph in general block
+
+Whitespace is allowed before the '<' and '>' characters on the starting and closing lines but does
+not change the needed indentation:
+
+::example:
+  A paragraph
+
+    <<<
+   general block
+       >>>
+
+General blocks can be nested:
+
+::example:
+  <<<
+  The outer general block
+
+  <<<
+  The inner block
+  >>>
+
+  >>>
+
+
 ### Block extension
 
 A line starting with two ':' characters, followed by an extension name, another ':' character and
