@@ -70,11 +70,25 @@ module VersaDok
   #
   # The :level property needs to be set to the header level, 1 to 6.
   #
+  # === code_block
+  #
+  # Content:: Verbatim
+  #
+  # The code_block element represents a verbatim part of the document. The content is available via
+  # the #content accessor.
+  #
   # === paragraph
   #
   # Content:: Inline elements
   #
   # The paragraph element represents a single paragraph containing inline elements.
+  #
+  # === general_block
+  #
+  # Content:: Block elements
+  #
+  # The general_block element is used to wrap multiple block elements into a container (e.g. for
+  # further styling).
   #
   # === block_extension
   #
@@ -142,6 +156,21 @@ module VersaDok
   #
   # * The property +:reference+ is used to specify the reference name under which the link
   #   destination is stored.
+  #
+  # === autolink
+  #
+  # Content:: None
+  #
+  # The autolink element is temporarily used when parsing autolinks. It is automatically converted
+  # to a link element if it is successfully parsed.
+  #
+  # This element must never appear in the final AST.
+  #
+  # === image
+  #
+  # Content:: Inline elements
+  #
+  # The image element represents a link to an image, similar to the general link element.
   #
   # === span
   #
