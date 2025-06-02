@@ -184,6 +184,7 @@ module VersaDok
     CATEGORY_MAP = { #:nodoc:
       root: :block,
       blockquote: :block,
+      list: :block,
       list_item: :block,
       header: :block,
       code_block: :block,
@@ -208,6 +209,7 @@ module VersaDok
     CONTENT_MODEL_MAP = { #:nodoc:
       root: :block,
       blockquote: :block,
+      list: :special,
       list_item: :block,
       header: :inline,
       code_block: :verbatim,
