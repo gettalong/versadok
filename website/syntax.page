@@ -524,3 +524,22 @@ mandatory line break.
 ::example:
   This is a paragraph with two lines,\
   having a hard break between the two lines.
+
+
+### Inline extension
+
+An inline extension consists of up to three parts:
+
+* The _name_ starts with a ':' character, followed by the extension name and another ':' character.
+
+* The _content_ in brackets like with a link is parsed as inline markup and defines the content. It
+  needs to be after the name but can be omitted.
+
+* The _data_ can either be in brackets or parentheses after the content, or only in parentheses
+  after the name. It is parsed verbatim as is.
+
+::example:
+  This :smiley: is an inline extension.
+  As is this :barcode:(01234567).
+  And this :highlight:[highlighted *text*] here.
+  And :comb:[we can combine](everything){.here}.
