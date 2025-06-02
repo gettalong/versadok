@@ -326,7 +326,7 @@ module VersaDok
 
     # Parses the header element at the current position.
     def parse_header
-      if @scanner.scan(/\#{1,6} /)
+      if @scanner.skip(/\#{1,6} /)
         level = @scanner.matched_size - 1
         if @stack.block_boundary?
           @stack.append_child(block_node(:header, properties: {level: level}))
