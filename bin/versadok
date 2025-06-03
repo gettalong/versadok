@@ -1,0 +1,59 @@
+#!/usr/bin/env ruby
+# -*- coding: utf-8; frozen_string_literal: true -*-
+#
+#--
+# This file is part of VersaDok which is licensed under the MIT.
+#
+# VersaDok - Versatile document creation markup and library
+# Copyright (C) 2025 Thomas Leitner <t_leitner@gmx.at>
+#++
+#
+
+require 'optparse'
+require 'versadok'
+
+options = {}
+extensions = []
+format = :html
+
+defined_options = []
+OptionParser.new do |opts|
+  opts.banner = "Usage: versadok [options] [FILE FILE ...]"
+  opts.summary_indent = ' ' * 4
+
+  opts.separator ""
+  opts.separator "Command line options:"
+  opts.separator ""
+
+  opts.on("-o", "--output ARG", [:html, :pdf, :ast],
+          "Specify the output format: html (default), pdf or ast") {|v| format = v }
+  opts.on("-x", "--extension EXT", Array,
+          "Load one or more extensions, separated via commas") {|x| extensions = x }
+  opts.on("-v", "--version", "Show the version of VersaDok") do
+    puts VersaDok::VERSION
+    exit
+  end
+  opts.on("-h", "--help", "Show the help") do
+    puts opts
+    exit
+  end
+end.parse!
+
+begin
+  context = VersaDok::Context.new
+  ast = VersaDok::Parser.new(context).parse(ARGF.read).finish
+  case format
+  when :html
+    require 'versadok/html_renderer'
+    puts VersaDok::HTMLRenderer.new(context).render(ast)
+  when :pdf
+    require 'versadok/pdf_renderer'
+    composer = VersaDok::PDFRenderer.new(context).render(ast)
+    puts composer.write_to_string
+  when :ast
+    puts ast
+  end
+rescue VersaDok::Error => e
+  $stderr.puts "Error: #{e.message}"
+  exit(1)
+end

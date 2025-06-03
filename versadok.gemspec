@@ -23,6 +23,7 @@ Gem::Specification.new do |s|
   s.files = PKG_FILES
 
   s.require_path = 'lib'
+  s.executables = ['versadok']
   s.add_dependency('strscan', '>= 3.1.2')
   s.required_ruby_version = '>= 3.0'
 
