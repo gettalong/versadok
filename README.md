@@ -4,16 +4,27 @@ VersaDok is a lightweight markup language. Its design is mainly based on [kramdo
 Markdown-superset, and on [Djot], with further influence from [AsciiDoc] and [reStructuredText].
 
 The goal of VersaDok is to create a markup language that is easy to write, read and reason about. It
-should be fully-featured and not tied to a particular output format. By making it Markdown-like many
+should be fully-featured and not tied to a particular output format. By being Markdown-like many
 people will already be familiar with the general syntax.
-
-The syntax of the language is not yet finalized and may change. Some syntax elements are still
-missing. Suggestions and feedback are best reported via the [issue tracker][issues].
 
 [kramdown]: https://kramdown.gettalong.org
 [Djot]: https://djot.net
 [AsciiDoc]: https://docs.asciidoctor.org/asciidoc/latest/
 [reStructuredText]: https://docutils.sourceforge.io/rst.html
+
+
+## Current State
+
+VersaDok can be considered alpha software at the moment. The things that are implemented are
+thoroughly tested (100% branch coverage) and the API is documented, though general documentation is
+not available.
+
+The syntax of the language is not yet finalized and may change. Some syntax elements like definition
+lists are still missing.
+
+Suggestions and feedback are welcome and best reported via the [issue tracker][issues].
+
+
 [issues]: https://github.com/gettalong/versadok/issues
 
 
