@@ -1,4 +1,5 @@
 require_relative 'versadok/data_dir'
+require_relative 'versadok/version'
 require_relative 'versadok/node'
 require_relative 'versadok/extension'
 require_relative 'versadok/context'
