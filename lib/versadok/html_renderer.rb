@@ -26,12 +26,15 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #++
 
+require 'erb/util'
 require_relative 'renderer'
 
 module VersaDok
 
   # The HTML renderer takes a VersaDok AST and returns an HTML representation.
   class HTMLRenderer < Renderer
+
+    include ERB::Escape
 
     # Renders the given +node+ into an appropriate HTML fragment.
     def render(node)
@@ -109,7 +112,7 @@ module VersaDok
     #
     # The method makes sure that all necessary characters are escaped.
     def render_text(text)
-      @out << escape_html(text.content)
+      @out << html_escape(text.content)
     end
 
     # Renders a soft-break node.
@@ -124,7 +127,7 @@ module VersaDok
 
     # Renders verbatim text.
     def render_verbatim(verbatim)
-      @out << "<code#{html_attributes(verbatim.attributes)}>#{escape_html(verbatim.content)}</code>"
+      @out << "<code#{html_attributes(verbatim.attributes)}>#{html_escape(verbatim.content)}</code>"
     end
 
     ['span', 'strong', ['emphasis', 'em'], ['subscript', 'sub'],
@@ -179,24 +182,12 @@ module VersaDok
       result = +''
       attr&.each_with_object(result) do |(k, v), result|
         next if v.nil? || (k == 'id' && v.strip.empty?) || overrides&.key?(k)
-        result << " #{k}=\"#{escape_html(v.to_s)}\""
+        result << " #{k}=\"#{html_escape(v.to_s)}\""
       end
       overrides&.each_with_object(result) do |(k, v), result|
-        result << " #{k}=\"#{escape_html(v.to_s)}\""
+        result << " #{k}=\"#{html_escape(v.to_s)}\""
       end
       result
-    end
-
-    ESCAPE_MAP = { #:nodoc:
-      '<' => '&lt;',
-      '>' => '&gt;',
-      '&' => '&amp;',
-      '"' => '&quot;',
-    }
-
-    # Escapes the special HTML characters in the string +str+.
-    def escape_html(str)
-      str.gsub(/<|>|&|"/, ESCAPE_MAP)
     end
 
   end
