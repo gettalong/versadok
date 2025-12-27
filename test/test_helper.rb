@@ -1,7 +1,5 @@
 # -*- encoding: utf-8 -*-
 
-gem 'strscan'
-
 begin
   require 'simplecov'
   SimpleCov.start do
@@ -12,6 +10,9 @@ begin
 rescue LoadError
 end
 
+gem 'minitest-mock'
+gem 'minitest'
+require 'minitest/mock'
 require 'minitest/autorun'
 
 TEST_DATA_DIR = File.join(__dir__, 'data')

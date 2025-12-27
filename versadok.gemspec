@@ -25,6 +25,8 @@ Gem::Specification.new do |s|
   s.require_path = 'lib'
   s.executables = ['versadok']
   s.add_dependency('strscan', '>= 3.1.2')
+  s.add_development_dependency('minitest', '~> 6.0')
+  s.add_development_dependency('minitest-mock', '~> 5.27')
   s.required_ruby_version = '>= 3.0'
 
   s.author = 'Thomas Leitner'
