@@ -161,11 +161,14 @@ describe VersaDok::Parser::Stack do
       @stack.append_child(node(:strong))
       @stack.append_child(node(:emphasis))
       @stack.close_node(@stack.node_level(:strong))
+      assert_equal(:paragraph, @stack.container.type)
+      assert_equal('', @stack.container.children[0].children[0].content)
 
       @stack.append_child(node(:strong))
       @stack.append_child(node(:text, content: +'emph'), container: false)
       @stack.append_child(node(:emphasis))
       @stack.close_node(@stack.node_level(:strong))
+      assert_equal('emph', @stack.container.children[1].children[0].content)
     end
   end
 
