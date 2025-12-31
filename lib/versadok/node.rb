@@ -62,6 +62,33 @@ module VersaDok
   #
   # The list_item element represents a single list item in an ordered or unordered list.
   #
+  # === definition_list
+  #
+  # Content:: Special (only definition_list_item elements)
+  #
+  # The definition list element represents a definition list. It must have at least one
+  # definition_list_item as child.
+  #
+  # === definition_list_item
+  #
+  # Content:: Special (only definition_list_item_term and definition_list_item_content)
+  #
+  # The definition_list_item element represents a single definition list item. It must have one or
+  # more definition_list_item_term and one or more definition_list_item_content elements. The
+  # content elements must follow the term elements.
+  #
+  # === definition_list_item_term
+  #
+  # Content:: Inline elements
+  #
+  # The definition_list_item_term element represents a definition term containing inline elements.
+  #
+  # === definition_list_item_content
+  #
+  # Content:: Block elements
+  #
+  # The defintion_list_item_content element represents the definition content of a definition item.
+  #
   # === header
   #
   # Content:: Inline elements
@@ -215,6 +242,10 @@ module VersaDok
       blockquote: :block,
       list: :block,
       list_item: :block,
+      definition_list: :block,
+      definition_list_item: :block,
+      definition_list_item_term: :block,
+      definition_list_item_content: :block,
       header: :block,
       code_block: :block,
       paragraph: :block,
@@ -241,6 +272,10 @@ module VersaDok
       blockquote: :block,
       list: :special,
       list_item: :block,
+      definition_list: :special,
+      definition_list_item: :block,
+      definition_list_item_term: :inline,
+      definition_list_item_content: :block,
       header: :inline,
       code_block: :verbatim,
       paragraph: :inline,

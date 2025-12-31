@@ -170,6 +170,54 @@ describe VersaDok::Parser::Stack do
       @stack.close_node(@stack.node_level(:strong))
       assert_equal('emph', @stack.container.children[1].children[0].content)
     end
+
+    describe "definition lists" do
+      before do
+        @stack.append_child(node(:definition_list))
+        @stack.append_child(node(:definition_list_item))
+        @stack.append_child(node(:paragraph))
+        @stack.append_child(node(:text, content: +'term'), container: false)
+        @stack.close_node(@stack.node_level(:paragraph))
+        @stack.append_child(node(:blank), container: false)
+        @stack.append_child(node(:paragraph))
+        @stack.append_child(node(:text, content: +'content'), container: false)
+      end
+
+      it "works in the standard case" do
+        @stack.close_node(@stack.node_level(:definition_list))
+        item = @stack.container.children[0].children[0]
+        assert_equal(:definition_list_item_term, item.children[0].type)
+        assert_equal('term', item.children[0].children[0].content)
+        assert_equal(:definition_list_item_content, item.children[1].type)
+        assert_equal('content', item.children[1].children[1].children[0].content)
+      end
+
+      it "merges term-only items" do
+        para = node(:paragraph)
+        para << node(:text, content: 'term')
+        item = node(:definition_list_item)
+        item << para
+        @stack[1].children.unshift(item)
+
+        @stack.close_node(@stack.node_level(:definition_list))
+        assert_equal(1, @stack.container.children[0].children.length)
+        item = @stack.container.children[0].children[0]
+        assert_equal(:definition_list_item_term, item.children[0].type)
+        assert_equal(:definition_list_item_term, item.children[1].type)
+        assert_equal(:definition_list_item_content, item.children[2].type)
+      end
+
+      it "treats a non-paragraph first block element as content instead of term" do
+        @stack[1].children[0].children.unshift(node(:blank))
+
+        @stack.close_node(@stack.node_level(:definition_list))
+        item = @stack.container.children[0].children[0]
+        assert_equal(:definition_list_item_term, item.children[0].type)
+        assert_equal(0, item.children[0].children.size)
+        assert_equal(:definition_list_item_content, item.children[1].type)
+        assert_equal(4, item.children[1].children.size)
+      end
+    end
   end
 
   describe "remove_node" do
@@ -551,6 +599,42 @@ describe VersaDok::Parser do
     it "ignores the list marker if it doesn't constitute a correct marker" do
       nodes = parse_multi("*para\n\n1para\n\n1- para", 5)
       nodes.values_at(0, 2, 4).each {|node| assert_equal(:paragraph, node.type) }
+    end
+  end
+
+  describe "parse_definition_list_item" do
+    it "sets the indent property on the list and list item" do
+      list = parse_single("   :   term", :definition_list, 1)
+      assert_equal(0, list[:indent])
+      assert_equal(4, list.children.last[:indent])
+    end
+
+    it "merges items that follow one another into the same definition list" do
+      list = parse_single("  : term\n\n: term\n\n content", :definition_list, 2)
+      assert_equal('content', list.children[1].children[1].children[1].children[0].content)
+    end
+
+    it "works when nested inside another block element" do
+      blockquote = parse_single(" > : item\n>\n>     para", :blockquote, 1)
+      assert_equal(1, blockquote.children.size)
+      list_item = blockquote.children[0].children[0]
+      assert_equal(1, list_item[:indent])
+      assert_equal(2, list_item.children.size)
+      assert_equal(:definition_list_item_term, list_item.children[0].type)
+      assert_equal(:definition_list_item_content, list_item.children[1].type)
+      assert_equal(:paragraph, list_item.children[1].children[1].type)
+    end
+
+    it "treats list items that would start a new list but are not on a block boundary as " \
+       "continuation lines" do
+      para = parse_single("para text\n: term", :paragraph, 3)
+      assert_equal("para text", para.children[0].content)
+      assert_equal(": term", para.children[2].content)
+    end
+
+    it "ignores the list marker if it doesn't constitute a correct marker" do
+      para = parse_single(":term", :paragraph, 1)
+      assert_equal(:paragraph, para.type)
     end
   end
 

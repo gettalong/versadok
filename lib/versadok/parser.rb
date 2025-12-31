@@ -153,6 +153,9 @@ module VersaDok
       #
       # All unclosed inline elements below the given level are deleted and their start marker
       # treated as plain text.
+      #
+      # For definition list items their child elements are adjusted to conform to the specification
+      # (e.g. first paragraph -> definition term).
       def close_node(level)
         (@stack.size - 1).downto(level + 1) do |i|
           break if @stack[i].category != :inline
@@ -170,7 +173,9 @@ module VersaDok
             children.concat(node.children)
           end
         end
-        @stack.pop(@stack.size - level)
+        @stack.pop(@stack.size - level).each do |n|
+          close_definition_list(n) if n.type == :definition_list
+        end
         @level = level - 1
       end
 
@@ -236,6 +241,52 @@ module VersaDok
       #   root -> node_type -> [current_node_type] -> another_node_type
       def to_s
         @stack.map.with_index {|n, i| @level == i ? "[#{n.type}]" : n.type }.join(' -> ')
+      end
+
+      private
+
+      # Handles restructuring the definition list content to the final form.
+      #
+      # This is needed because during parsing the content of the list is treated as block contents
+      # although it needs to follow a special structure.
+      def close_definition_list(list)
+        i, length = 0, list.children.length
+        terms = []
+
+        while i < length
+          item = list.children[i]
+          content = item.children.dup
+          item.children.clear
+
+          # The first block element contains the term of the definition item iff it is a paragraph.
+          if content.first.type == :paragraph
+            term = content.shift
+            term.type = :definition_list_item_term
+            terms << term
+          end
+
+          # If the definition item only contains a single paragraph and nothing else, not even a
+          # blank line, it is merged into the next item as additional term.
+          if content.length == 0 && i + 1 < length
+            list.children.delete_at(i)
+            length -= 1
+          else
+            # Each item needs at least one term element
+            if terms.empty?
+              item << Node.new(:definition_list_item_term)
+            else
+              terms.each {|term| item << term }
+            end
+
+            # And each item also needs at least one content element
+            content_node = Node.new(:definition_list_item_content)
+            item << content_node
+            content_node.children.replace(content)
+
+            terms.clear
+            i += 1
+          end
+        end
       end
 
     end
@@ -311,7 +362,11 @@ module VersaDok
       when 60 # <
         parse_general_block_start
       when 58 # :
-        parse_block_extension
+        if @scanner.match?(': ')
+          parse_definition_list_item
+        else
+          parse_block_extension
+        end
       when 123 # {
         parse_attribute_list
       when 91 # [
@@ -410,6 +465,24 @@ module VersaDok
       else
         parse_continuation_line
       end
+    end
+
+    # Parses the definition list item at the current position.
+    def parse_definition_list_item
+      last_child = @stack.last_child
+      indent = @scanner.pos - @left_margin_pos
+      if last_child&.type == :definition_list && last_child.children.last[:indent] >= indent
+        @stack.enter
+      elsif @stack.block_boundary?
+        @stack.append_child(block_node(:definition_list, properties: {indent: 0}))
+      else
+        parse_continuation_line
+        return
+      end
+      @scanner.pos += @scanner.matched_size
+
+      @stack.append_child(Node.new(:definition_list_item, properties: {indent: indent + 1}))
+      parse_line
     end
 
     # Parses the code block at the current position.

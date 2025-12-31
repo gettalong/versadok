@@ -140,10 +140,22 @@ This also means that blank lines must preceed sub-lists:
     * Sub-list second item
   * Second item
 
+Whitespace is allowed before a list item and counts against the needed indentation for its content:
+
+::example:
+  This is a paragraph.
+
+     * List item with leading whitespace.
+
+       Paragraph within the list item.
+
+    Paragraph outside the list item.
+
 The following list item markers are supported:
 
 * The characters '*', '+' and '-' create a bullet list.
 * A decimal number followed by by either '.' or ')' creates an ordered list.
+* The character ':' creates a definition list.
 
 Different list item markers are not allowed within the same list:
 
@@ -159,16 +171,39 @@ When creating an ordered list, the first list item marker defines the start numb
   5. First item but numbered as 5
   1. Second item but numbered as 6
 
-Whitespace is allowed before a list item and counts against the needed indentation for its content:
+
+### Definition List
+
+A definition list follows the general rules for lists above, with some additions.
+
+When creating a definition list, the first block element needs to be a paragraph defining the term:
 
 ::example:
-  This is a paragraph.
+  : This is the term and it is
+    continued here.
 
-     * List item with leading whitespace.
+    Definition content
 
-       Paragraph within the list item.
+If the first block element is _not_ a paragraph, the definition item contains no term, just the
+definition:
 
-    Paragraph outside the list item.
+::example:
+  :
+    Definition content because above is a blank line.
+
+The definition content is optional in which case the definition item contains only the term:
+
+::example:
+  : Term here without content
+
+If a term without definition content is directly followed by another definition item, i.e. without
+any intervening blank lines, the terms are merged into a single item:
+
+::example:
+  : first term
+  : second term
+
+    And this is the definition content for both terms.
 
 
 ### Code block
