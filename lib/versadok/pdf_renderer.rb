@@ -168,6 +168,32 @@ module VersaDok
       end
     end
 
+    # Renders a definition list as container.
+    def render_definition_list(list)
+      @layout.container(splitable: true, style: node_style) do |container|
+        render_children(list, container)
+      end
+    end
+
+    # Renders a definition list item as container.
+    def render_definition_list_item(item)
+      @layout.container(splitable: true, style: node_style) do |container|
+        render_children(item, container)
+      end
+    end
+
+    # Renders a definition term as paragraph.
+    def render_definition_list_item_term(term)
+      @layout.formatted_text(render_children(term), box_style: node_style)
+    end
+
+    # Renders a definition content element wrapped in a container box.
+    def render_definition_list_item_content(content)
+      @layout.container(splitable: true, style: node_style) do |container|
+        render_children(content, container)
+      end
+    end
+
     # Renders a code block via HexaPDF's +text+ helper.
     def render_code_block(code_block)
       @layout.text(code_block.content, style: text_style(append_text_suffix: true),

@@ -132,6 +132,27 @@ describe VersaDok::PDFRenderer do
     end
   end
 
+  describe "render_definition_list" do
+    it "uses a splitable ContainerBox with style :definition_list" do
+      @composer.style(:definition_list, margin: 20)
+      box = render(:definition_list)
+      assert_kind_of(HexaPDF::Layout::ContainerBox, box)
+      assert(box.splitable)
+      assert_equal(20, box.style.margin.top)
+    end
+
+    it "renders the children" do
+      term = node(:definition_list_item_term, children: [node(:text, content: 'Term')])
+      content = node(:definition_list_item_content,
+                     children: [node(:paragraph, children: [node(:text, content: "Definition")])])
+      item = node(:definition_list_item, children: [term, content])
+      box = render(:definition_list, children: [item])
+      assert_equal(1, box.children.size)
+      assert_equal("Term", box.children[0].children[0].text)
+      assert_equal("Definition", box.children[0].children[1].children[0].text)
+    end
+  end
+
   describe "render_code_block" do
     it "uses a TextBox with style :code_block" do
       @composer.style(:code_block, font_size: 50)

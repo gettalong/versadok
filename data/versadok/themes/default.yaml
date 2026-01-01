@@ -74,6 +74,18 @@ list_decimal:
     marker_type: :decimal
     item_spacing: <%= font_size %>
 
+definition_list:
+  base: :base_box
+definition_list_item:
+  base: :base_box
+definition_list_item_term_text:
+  base: :base_text
+  font_bold: true
+definition_list_item_content:
+  base: :base_box
+  padding:
+    left: <%= 4 * font_size %>
+
 code_block:
   base: :base_box
   background_color: lightgrey

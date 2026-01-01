@@ -145,6 +145,28 @@ describe VersaDok::HTMLRenderer do
     end
   end
 
+  describe "render_definition_list" do
+    before do
+      @dl_term = node(:definition_list_item_term, children: [node(:text, content: 'Term')])
+      @dl_content = node(:definition_list_item_content, children: [@simple_para])
+      @item = node(:definition_list_item, children: [@dl_term, @dl_content])
+    end
+
+    it "renders a simple definition list" do
+      item2 = node(:definition_list_item, children: [@dl_term, @dl_term, @dl_content, @dl_content])
+      assert_equal("<dl>\n<dt>Term</dt>\n<dd>\n<p>Simple paragraph</p>\n</dd>\n" \
+                   "<dt>Term</dt>\n<dt>Term</dt>\n" \
+                   "<dd>\n<p>Simple paragraph</p>\n</dd>\n<dd>\n<p>Simple paragraph</p>\n</dd>\n" \
+                   "</dl>\n",
+                   render(:definition_list, children: [@item, item2]))
+    end
+
+    it "renders attributes" do
+      assert_equal("<dl class=\"class\">\n<dt>Term</dt>\n<dd>\n<p>Simple paragraph</p>\n</dd>\n</dl>\n",
+                   render(:definition_list, attr: {'class' => 'class'}, children: [@item]))
+    end
+  end
+
   describe "render_code_block" do
     it "renders the code block" do
       assert_equal("<pre><code>Simple</code></pre>\n",

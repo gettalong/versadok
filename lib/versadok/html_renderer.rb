@@ -96,6 +96,33 @@ module VersaDok
       @out << "</li>\n"
     end
 
+    # Renders a definition list.
+    #
+    # See: #render_definition_list_item_term, #render_definition_list_item_content
+    def render_definition_list(list)
+      @out << "<dl#{html_attributes(list.attributes)}>\n"
+      super
+      @out << "</dl>\n"
+    end
+
+    # Renders a definition term.
+    #
+    # See: #render_definition_list
+    def render_definition_list_item_term(term)
+      @out << "<dt#{html_attributes(term.attributes)}>"
+      super
+      @out << "</dt>\n"
+    end
+
+    # Renders a definition content element.
+    #
+    # See: #render_definition_list
+    def render_definition_list_item_content(content)
+      @out << "<dd#{html_attributes(content.attributes)}>\n"
+      super
+      @out << "</dd>\n"
+    end
+
     # Renders a code block.
     def render_code_block(code_block)
       @out << "<pre#{html_attributes(code_block.attributes)}><code>#{code_block.content}</code></pre>\n"
