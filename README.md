@@ -19,8 +19,8 @@ VersaDok can be considered alpha software at the moment. The things that are imp
 thoroughly tested (100% branch coverage) and the API is documented, though general documentation is
 not available.
 
-The syntax of the language is not yet finalized and may change. Some syntax elements like definition
-lists are still missing.
+The syntax of the language is not yet finalized and may change. Some syntax elements like tables are
+still missing.
 
 Suggestions and feedback are welcome and best reported via the [issue tracker][issues].
 
@@ -63,6 +63,19 @@ The full syntax documentation can be found in [`website/syntax.page`](website/sy
 
   * While this list
   * has no ordering
+  ~~~
+
+* Definition list
+
+  ~~~
+  : Term
+
+    And definition of the term
+
+  : Another term
+  : And another one
+
+    The definition for both terms above
   ~~~
 
 * Code block
