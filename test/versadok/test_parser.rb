@@ -1367,7 +1367,7 @@ describe VersaDok::Parser do
       it "works if the reference link name is across lines" do
         node = parse_single("Some [link][here  \n   ref] comes", :paragraph, 3)
         assert_equal(:link, node.children[1].type)
-        assert_equal("hereref", node.children[1][:reference])
+        assert_equal("here ref", node.children[1][:reference])
       end
 
       it "handles a missing closing parentheses" do
@@ -1496,10 +1496,17 @@ describe VersaDok::Parser do
     end
 
     it "can have some markup content and verbatim content" do
-      node = parse_single("Some :extension:[with *strong* content](*verbatim*) here", :paragraph, 3)
+      node = parse_single("Some :extension:[with *strong* content](*verba\ntim*) here", :paragraph, 3)
       assert_equal(:inline_extension, node.children[1].type)
       assert_equal(:strong, node.children[1].children[1].type)
       assert_equal('*verbatim*', node.children[1][:data])
+    end
+
+    it "can have some markup content and verbatim content in brackets" do
+      node = parse_single("Some :extension:[with *strong* content][*verba\ntim*] here", :paragraph, 3)
+      assert_equal(:inline_extension, node.children[1].type)
+      assert_equal(:strong, node.children[1].children[1].type)
+      assert_equal('*verba tim*', node.children[1][:data])
     end
 
     it "can have some markup content and an attribute list" do

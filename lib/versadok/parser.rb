@@ -813,7 +813,7 @@ module VersaDok
         data_node = @stack.remove_node(level)
         start_pos = data_node[:pos] || start_of_line
         data_node.content << @scanner.string.byteslice(start_pos, @scanner.pos - 1 - start_pos)
-        data_node.content.gsub!(/\s*(?:#{EOL_RE_STR})/o, "")
+        data_node.content.gsub!(/\s*(?:\r\n?|\n)/o, (data_type == :reference ? " " : ""))
 
         level = @stack.node_level(:span)
         node = @stack[level]

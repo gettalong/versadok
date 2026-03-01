@@ -499,11 +499,15 @@ character. The closing bracket must be directly followed without any intervening
   and [this a reference one][ref].
 
 The destination and reference are both treated as verbatim text. If there is a line break all
-whitespace before the line break as well as the line break itself are removed.
+whitespace before the line break as well as the line break itself are removed and in case of a
+reference replaced with a single space.
 
 ::example:
   This is [a link with](a linebreak
   in the destination).
+
+  And this is [a link with[a reference
+  name].
 
 
 ### Autolink
@@ -577,7 +581,7 @@ An inline extension consists of up to three parts:
   needs to be after the name but can be omitted.
 
 * The _data_ can either be in brackets or parentheses after the content, or only in parentheses
-  after the name. It is parsed verbatim as is.
+  after the name. It is parsed like the destination or reference of a link.
 
 ::example:
   This :smiley: is an inline extension.
