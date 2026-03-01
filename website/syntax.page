@@ -341,6 +341,12 @@ themselves are removed:
   [ref]: this_is_
    one_long_url.html
 
+Whitespace is allowed before a reference link definition:
+
+::example:
+  This is a paragraph with [a][link].
+
+     [link]: whitespace_allowed_before_link_def.html
 
 ### Attribute list
 
