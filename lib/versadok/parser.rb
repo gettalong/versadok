@@ -693,7 +693,7 @@ module VersaDok
           when 123 # {
             parse_simple_span
           else
-            @scanner.unscan
+            @scanner.unscan if byte
             parse_bracketed_data_closed(:reference, start_of_line)
           end
         when 41 # )

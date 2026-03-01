@@ -1379,6 +1379,11 @@ describe VersaDok::Parser do
         node = parse_single("Some [*link][here*", :paragraph, 1)
         assert_equal("Some [*link][here*", node.children[0].content)
       end
+
+      it "works if no content follows the closing parentheses" do
+        node = parse_single("Some [link][here]", :paragraph, 2)
+        assert_equal("here", node.children[1][:reference])
+      end
     end
   end
 
