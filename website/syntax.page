@@ -14,6 +14,9 @@ The VersaDok syntax is chosen so that the following goals are achieved:
 
 4. Backtracking should not be needed. This avoids performance and security problems.
 
+5. Hard-wrapping any block element should be possible. This also means that nearly all block
+   elements need to start on a block boundary.
+
 
 ### Line breaks
 
