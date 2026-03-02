@@ -952,6 +952,10 @@ describe VersaDok::Parser do
     it "ignores lines with missing colon" do
       parse_single("[test] url", :paragraph, 1)
     end
+
+    it "ignores lines with no reference name" do
+      parse_single("[]: url", :paragraph, 1)
+    end
   end
 
   describe "parse_attribute_list" do
