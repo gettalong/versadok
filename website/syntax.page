@@ -351,6 +351,9 @@ Whitespace is allowed before a reference link definition:
 
      [link]: whitespace_allowed_before_link_def.html
 
+If two or more reference link definitions for the same reference are found, the last one is used.
+
+
 ### Attribute list
 
 A line starting with a '{' character followed by a list of attributes, a '}' character, optional

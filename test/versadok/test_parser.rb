@@ -941,6 +941,11 @@ describe VersaDok::Parser do
       assert_equal({"ref" => "dest.htmlcontinuation"}, @context.link_destinations)
     end
 
+    it "uses the last definition if multiple exist for the same reference name" do
+      parse_multi("[ref]: dest.html\n[ref]: other.html", 0)
+      assert_equal({"ref" => "other.html"}, @context.link_destinations)
+    end
+
     it "ignores lines with missing space" do
       parse_single("[test]:", :paragraph, 1)
     end
