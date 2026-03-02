@@ -28,7 +28,10 @@ namespace :dev do
   end
 
   spec = eval(File.read('versadok.gemspec'), binding, 'versadok.gemspec')
-  Gem::PackageTask.new(spec)
+  Gem::PackageTask.new(spec) do |pkg|
+    pkg.need_zip = true
+    pkg.need_tar = true
+  end
 
   desc "Upload the release to Rubygems"
   task publish_files: [:package] do
