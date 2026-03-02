@@ -926,6 +926,10 @@ describe VersaDok::Parser do
       assert_equal({"ref" => "dest_continued_here"}, @context.link_destinations)
     end
 
+    it "needs a block boundary before it" do
+      parse_single("This is a para\n[ref]: dest.html", :paragraph, 3)
+    end
+
     it "works when there are elements directly afterwards" do
       elements = parse_multi("[ref]: dest.html\ntest", 1)
       assert_equal({"ref" => "dest.html"}, @context.link_destinations)

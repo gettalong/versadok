@@ -553,7 +553,7 @@ module VersaDok
 
     # Parses the reference link definition at the current position.
     def parse_reference_link_definition
-      if @scanner.match?(/\[([^\]]*)\]: (?=\S)/)
+      if @scanner.match?(/\[([^\]]*)\]: (?=\S)/) && @stack.block_boundary?
         reference = @scanner[1]
         indent = @scanner.pos - @left_margin_pos + 1
         @scanner.pos += @scanner.matched_size
