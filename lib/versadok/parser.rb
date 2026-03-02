@@ -173,9 +173,18 @@ module VersaDok
             children.concat(node.children)
           end
         end
-        @stack.pop(@stack.size - level).each do |n|
-          close_definition_list(n) if n.type == :definition_list
+        i = level - 1
+        while i <= @stack.size - 2
+          node = @stack[i + 1]
+          case node.type
+          when :definition_list
+            close_definition_list(node)
+          when :footnote
+            @stack[i].children.delete(node)
+          end
+          i += 1
         end
+        @stack.pop(@stack.size - level)
         @level = level - 1
       end
 
@@ -370,7 +379,11 @@ module VersaDok
       when 123 # {
         parse_attribute_list
       when 91 # [
-        parse_reference_link_definition
+        if @scanner.match?('[^')
+          parse_footnote
+        else
+          parse_reference_link_definition
+        end
       when 13, 10, nil # \r \n EOS
         byte = @scanner.scan_byte
         @scanner.scan_byte if byte == 13 && @scanner.peek_byte == 10
@@ -567,6 +580,21 @@ module VersaDok
       end
     end
 
+    # Parses the footnote at the current position.
+    def parse_footnote
+      if @scanner.match?(/\[\^([^\]]+)\]: /)
+        reference = @scanner[1]
+        indent = @scanner.pos - @left_margin_pos + 1
+        @scanner.pos += @scanner.matched_size
+        node = block_node(:footnote, properties: {indent: indent})
+        @stack.append_child(node, container: true)
+        @context.footnotes[reference] = node
+        parse_line
+      else
+        parse_continuation_line
+      end
+    end
+
     # Parses the lines at the curent position as verbatim, as long as possible.
     #
     # The +indent+ argument specifies the needed indentation of the verbatim lines at the current
@@ -676,7 +704,13 @@ module VersaDok
         when 62 # >
           parse_autolink_closed(start_of_line)
         when 91 # [
-          parse_bracketed_content_opened('[')
+          if @scanner.peek_byte == 94 && @scanner.string.getbyte(@scanner.pos + 1) != 93 # ^ and not ]
+            @scanner.pos += 1
+            @stack.append_child(Node.new(:span, properties: {marker: '[^'}))
+            parse_bracketed_data_opened(:reference)
+          else
+            parse_bracketed_content_opened('[')
+          end
         when 33 # !
           if @scanner.peek_byte == 91
             @scanner.pos += 1
@@ -823,6 +857,9 @@ module VersaDok
         elsif node[:marker] == '!['
           node.type = :image
           node[data_type] = data_node.content
+        elsif node[:marker] == '[^'
+          node.type = :footnote_reference
+          node[:name] = data_node.content
         else
           node.type = :inline_extension
           node[:data] = data_node.content

@@ -36,10 +36,14 @@ module VersaDok
     # The mapping of references to link destinations (used for reference links).
     attr_reader :link_destinations
 
+    # The mapping of references to footnote elements.
+    attr_reader :footnotes
+
     # Creates a new Context instance.
     def initialize
       @extensions = {default: Extension.new(self)}
       @link_destinations = {}
+      @footnotes = {}
       load_builtin_extensions
     end
 

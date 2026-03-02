@@ -1075,6 +1075,48 @@ describe VersaDok::Parser do
     end
   end
 
+  describe "parse_footnote" do
+    it "parses a simple footnote" do
+      parse_multi("[^footnote]: Some para here", 0)
+      node = @context.footnotes["footnote"]
+      assert_equal(1, node.children.size)
+      assert_equal("Some para here", node.children[0].children[0].content)
+    end
+
+    it "works when using optional leading whitespace" do
+      parse_multi("     [^footnote]: Some\npara", 0)
+      para = @context.footnotes["footnote"].children[0]
+      assert_equal("Some", para.children[0].content)
+      assert_equal(:soft_break, para.children[1].type)
+      assert_equal("para", para.children[2].content)
+    end
+
+    it "parses a footnote with multiple block elements" do
+      para = parse_single("   [^footnote]: Some\n para\n\n    here\n\n   not here", :paragraph, 1)
+      assert_equal("not here", para.children[0].content)
+      node = @context.footnotes["footnote"]
+      assert_equal([:paragraph, :blank, :paragraph, :blank], node.children.map(&:type))
+    end
+
+    it "uses the last footnote if multiple exist for the same name" do
+      parse_multi("[^footnote]: Para1\n[^footnote]: Para2", 0)
+      assert_equal("Para2", @context.footnotes["footnote"].children[0].children[0].content)
+    end
+
+    it "uses an attribute list defined directly before it" do
+      parse_multi("{#id}\n[^footnote]: Some para here", 0)
+      assert_equal("id", @context.footnotes["footnote"].attributes["id"])
+    end
+
+    it "ignores lines with missing space" do
+      parse_single("[^footnote]:test", :paragraph, 2)
+    end
+
+    it "ignores lines with missing colon" do
+      parse_single("[^footnote] url", :paragraph, 2)
+    end
+  end
+
   describe "parse_inline_simple" do
     it "works for content marked-up with strong" do
       node = parse_single("*home*", :paragraph, 1)
@@ -1567,6 +1609,35 @@ describe VersaDok::Parser do
     it "prevents inline markup closing across the verbatim content marker" do
       node = parse_single("Some *strong :extension:(here* element", :paragraph, 1)
       assert_equal("Some *strong :extension:(here* element", node.children[0].content)
+    end
+  end
+
+  describe "footnote_reference" do
+     it "works in the simple case" do
+      node = parse_single("Some [^footnote] here", :paragraph, 3)
+      assert_equal(:footnote_reference, node.children[1].type)
+      assert_equal("footnote", node.children[1][:name])
+    end
+
+    it "works if the footnote reference name is across lines" do
+      node = parse_single("Some [^footnote   \n   is] here", :paragraph, 3)
+      assert_equal(:footnote_reference, node.children[1].type)
+      assert_equal("footnote is", node.children[1][:name])
+    end
+
+    it "handles a missing closing parentheses" do
+      node = parse_single("Some [^footnote here", :paragraph, 1)
+      assert_equal("Some [^footnote here", node.children[0].content)
+    end
+
+    it "prevents inline markup closing across the [^ border (like with verbatim)" do
+      node = parse_single("*Some [^footnote* here", :paragraph, 1)
+      assert_equal("*Some [^footnote* here", node.children[0].content)
+    end
+
+    it "needs a non-empty reference name" do
+      node = parse_single("Some [^] here", :paragraph, 1)
+      assert_equal("Some [^] here", node.children[0].content)
     end
   end
 end

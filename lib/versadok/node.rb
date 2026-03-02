@@ -125,6 +125,12 @@ module VersaDok
   #
   # The property +:name+ contains the name of the extension.
   #
+  # === footnote
+  #
+  # Content:: Block elements
+  #
+  # The footnote element represents the actual content of a footnote. It is never part of the AST
+  # but only stored Context#footnotes.
   #
   # == Supported inline node types
   #
@@ -235,6 +241,14 @@ module VersaDok
   # The inline_extension element represents an inline extension for adding custom functionality.
   #
   # The property +:name+ contains the name of the extension.
+  #
+  # === footnote_reference
+  #
+  # Content:: None
+  #
+  # The footnote reference element represents a footnote reference placed in the text.
+  #
+  # The property +:name+ contains the name of the footnote.
   class Node
 
     CATEGORY_MAP = { #:nodoc:
@@ -265,6 +279,8 @@ module VersaDok
       soft_break: :inline,
       hard_break: :inline,
       inline_extension: :inline,
+      footnote_reference: :inline,
+      footnote: :block,
     }
 
     CONTENT_MODEL_MAP = { #:nodoc:
@@ -295,6 +311,8 @@ module VersaDok
       soft_break: :none,
       hard_break: :none,
       inline_extension: :inline,
+      footnote_reference: :none,
+      footnote: :block,
     }
 
     # The type of the node.

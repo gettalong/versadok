@@ -354,6 +354,28 @@ Whitespace is allowed before a reference link definition:
 If two or more reference link definitions for the same reference are found, the last one is used.
 
 
+### Footnote
+
+A line starting with the '[^' characters, followed by the footnote reference name, a ']' character,
+a ':' character and a space starts a footnote. The rest of the line as well as all following
+indented lines are the content of the footnote and block markup.
+
+::example:
+  [^footnote]: Content here and
+    goes on here.
+
+    Here is another paragraph in the footnote.
+
+Whitespace is allowed before a footnote:
+
+::example:
+  This is a paragraph with a [^footnote].
+
+     [^footnote]: Content of the footnote.
+
+If two or more footnotes for the same footnote reference name are found, the last one is used.
+
+
 ### Attribute list
 
 A line starting with a '{' character followed by a list of attributes, a '}' character, optional
@@ -535,6 +557,27 @@ An image starts with a '!' character and is directly followed by a link.
   This is an ![image link](image.png).
 
 The content part is usually used for the alternative description of the image.
+
+
+### Footnote reference
+
+A footnote reference starts with the '[^' characters, followed by the footnote reference name and a
+']' character.
+
+::example:
+  This is a [^footnote reference].
+
+The footnote reference name is treated as verbatim text. If there is a line break all whitespace
+before the line break as well as the line break itself are removed and replaced by a single space.
+
+::example:
+  This is a [^footnote
+  with line break].
+
+  The above is equivalent to
+  this [^footnote with line break].
+
+The content of a footnote is defined separately with the footnote block element.
 
 
 ### Inline attribute list
