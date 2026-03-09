@@ -293,4 +293,69 @@ describe VersaDok::HTMLRenderer do
                           children: [node(:text, content: 'image content')]))
     end
   end
+
+  describe "render_footnote_reference and footnotes" do
+    before do
+      para = node(:paragraph, children: [node(:text, content: 'Simple paragraph')])
+      @context.footnotes['foo'] = node(:footnote, children: [para])
+    end
+
+    it "renders a link to the footnote" do
+      assert_equal('<a id="fnref:foo:1" href="#fn:foo" role="doc-noteref"><sup>1</sup></a>',
+                   render(:footnote_reference, name: 'foo')[/\A.*(?=<section)/m])
+    end
+
+    it "renders a link to a non-existing footnote" do
+      assert_equal('<a id="fnref:unknown:1" href="#fn:unknown" role="doc-noteref"><sup>1</sup></a>',
+                   render(:footnote_reference, name: 'unknown')[/\A.*(?=<section)/m])
+    end
+
+    it "renders multiple links to the same footnote" do
+      result = render(:paragraph, children: [
+                        node(:footnote_reference, name: 'foo'),
+                        node(:footnote_reference, name: 'foo')
+                      ])[/\A.*(?=<section)/m]
+      assert_equal('<p><a id="fnref:foo:1" href="#fn:foo" role="doc-noteref"><sup>1</sup></a>' \
+                   "<a id=\"fnref:foo:2\" href=\"#fn:foo\" role=\"doc-noteref\"><sup>1</sup></a></p>\n",
+                   result)
+    end
+
+    it "renders the footnote section for an existing footnote into the last paragraph" do
+      assert_equal('<section role="doc-endnotes"><ol>' \
+                   '<li id="fn:foo"><p>Simple paragraph' \
+                   '<a href="fnref:foo:1" role="doc-backlink">↩<sup>1</sup></a>' \
+                   "</p>\n</li></ol></section>",
+                   render(:footnote_reference, name: 'foo')[/<section.*/m])
+    end
+
+    it "renders the footnote section for an existing footnote after non-paragraph content" do
+      header = node(:header, level: 1, children: [node(:text, content: 'header')])
+      @context.footnotes['foo'].children[0] = header
+      assert_equal('<section role="doc-endnotes"><ol>' \
+                   "<li id=\"fn:foo\"><h1>header</h1>\n" \
+                   '<a href="fnref:foo:1" role="doc-backlink">↩<sup>1</sup></a>' \
+                   "</li></ol></section>",
+                   render(:footnote_reference, name: 'foo')[/<section.*/m])
+    end
+
+    it "renders the footnote section for a non-existing footnote" do
+      assert_equal('<section role="doc-endnotes"><ol>' \
+                   '<li id="fn:unknown">' \
+                   '<a href="fnref:unknown:1" role="doc-backlink">↩<sup>1</sup></a></li>' \
+                   '</ol></section>',
+                   render(:footnote_reference, name: 'unknown')[/<section.*/m])
+    end
+
+    it "renders multiple links to the same footnote" do
+      result = render(:paragraph, children: [
+                        node(:footnote_reference, name: 'foo'),
+                        node(:footnote_reference, name: 'foo')
+                      ])[/<section.*/m]
+      assert_equal('<section role="doc-endnotes"><ol>' \
+                   '<li id="fn:foo"><p>Simple paragraph' \
+                   '<a href="fnref:foo:1" role="doc-backlink">↩<sup>1</sup></a>' \
+                   '<a href="fnref:foo:2" role="doc-backlink">↩<sup>2</sup></a>' \
+                   "</p>\n</li></ol></section>", result)
+    end
+  end
 end

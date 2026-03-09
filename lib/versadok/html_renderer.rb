@@ -34,12 +34,22 @@ module VersaDok
   # The HTML renderer takes a VersaDok AST and returns an HTML representation.
   class HTMLRenderer < Renderer
 
+    # Holds the information needed to correctly show footnotes
+    UsedFootnote = Struct.new(:name, :number, :count)
+
     include ERB::Escape
+
+    def initialize(*) # :nodoc:
+      super
+      @footnote_counter = 0
+      @used_footnotes = {}
+    end
 
     # Renders the given +node+ into an appropriate HTML fragment.
     def render(node)
       @out = +''
       super
+      render_footnotes unless @used_footnotes.empty?
       @out
     end
 
@@ -197,6 +207,42 @@ module VersaDok
       @out = temp
 
       @out << "<img#{html_attributes(image.attributes, overrides)} />"
+    end
+
+    # Renders a footnote reference.
+    def render_footnote_reference(fnref)
+      name = fnref[:name]
+      if (footnote = @used_footnotes[name])
+        number = footnote.number
+        repeat = footnote.count += 1
+      else
+        number = @footnote_counter += 1
+        repeat = 1
+        @used_footnotes[name] = UsedFootnote.new(name, number, repeat)
+      end
+      overrides = {'id' => "fnref:#{name}:#{repeat}", 'href' => "#fn:#{name}",
+                   'role' => 'doc-noteref'}
+      @out << "<a#{html_attributes(fnref.attributes, overrides)}>" \
+              "<sup>#{number}</sup></a>"
+    end
+
+    # Renders the used footnotes.
+    def render_footnotes
+      @out << "<section role=\"doc-endnotes\"><ol>"
+      @used_footnotes.each do |name, used_footnote|
+        @out << "<li id=\"fn:#{name}\">"
+        if (footnote_node = @context.footnotes[name])
+          render_children(footnote_node)
+        end
+        backlinks = 1.upto(used_footnote.count).map do |counter|
+          "<a href=\"fnref:#{name}:#{counter}\" role=\"doc-backlink\">↩<sup>#{counter}</sup></a>"
+        end.join('')
+        unless @out.sub!(/(?=<\/p>\n?\z)/m, backlinks)
+          @out << backlinks
+        end
+        @out << "</li>"
+      end
+      @out << "</ol></section>"
     end
 
     # Returns the HTML representation of the attributes +attr+.

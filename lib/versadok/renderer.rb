@@ -102,8 +102,9 @@ module VersaDok
       when :superscript then render_superscript(node)
       when :block_extension then render_extension(node)
       when :inline_extension then render_extension(node)
+      when :footnote_reference then render_footnote_reference(node)
       else
-        raise "Unsupported node type #{node.type}"
+        raise "Unsupported node type '#{node.type}'"
       end
     end
 
@@ -151,6 +152,7 @@ module VersaDok
     alias_method :render_soft_break, :render_blank #:nodoc:
     alias_method :render_hard_break, :render_blank #:nodoc:
     alias_method :render_verbatim, :render_blank #:nodoc:
+    alias_method :render_footnote_reference, :render_blank #:nodoc:
 
   end
 
