@@ -356,7 +356,7 @@ If two or more reference link definitions for the same reference are found, the 
 
 ### Footnote
 
-A line starting with the '[^' characters, followed by the footnote reference name, a ']' character,
+A line starting with the '\[^' characters, followed by the footnote reference name, a ']' character,
 a ':' character and a space starts a footnote. The rest of the line as well as all following
 indented lines are the content of the footnote and block markup.
 
@@ -561,7 +561,7 @@ The content part is usually used for the alternative description of the image.
 
 ### Footnote reference
 
-A footnote reference starts with the '[^' characters, followed by the footnote reference name and a
+A footnote reference starts with the '\[^' characters, followed by the footnote reference name and a
 ']' character.
 
 ::example:
