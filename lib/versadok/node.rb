@@ -281,6 +281,9 @@ module VersaDok
       inline_extension: :inline,
       footnote_reference: :inline,
       footnote: :block,
+      table: :block,
+      row: :block,
+      cell: :block,
     }
 
     CONTENT_MODEL_MAP = { #:nodoc:
@@ -313,6 +316,9 @@ module VersaDok
       inline_extension: :inline,
       footnote_reference: :none,
       footnote: :block,
+      table: :special,
+      row: :special,
+      cell: :inline,
     }
 
     # The type of the node.

@@ -17,7 +17,7 @@ describe VersaDok::Renderer do
 
   describe "render" do
     it "calls the correct render_TYPE method" do
-      renders_children = [:root, :paragraph, :header, :blockquote, :list, :list_item,
+      renders_children = [:root, :paragraph, :header, :blockquote, :list, :list_item, :table,
                           :span, :link, :strong, :emphasis, :subscript, :superscript]
       renders_nothing = [:blank, :code_block, :text, :soft_break, :hard_break, :verbatim,
                          :footnote_reference]

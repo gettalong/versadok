@@ -373,7 +373,8 @@ describe VersaDok::Parser do
     @parser = VersaDok::Parser.new(@context)
   end
 
-  def parse_single(str, type, child_count)
+  def parse_single(str, type, child_count, reset: false)
+    @parser.finish.children.clear if reset
     root = @parser.parse(str).finish
     assert_equal(1, root.children.size)
     retval = root.children[0]
@@ -1117,6 +1118,91 @@ describe VersaDok::Parser do
     end
   end
 
+  describe "parse_table" do
+    it "parses a normal table" do
+      table = parse_single("|data|file", :table, 1)
+      assert_equal(2, table.children[0].children.count)
+      assert_equal("data", table.children[0].children[0].children[0].content)
+      assert_equal("file", table.children[0].children[1].children[0].content)
+    end
+
+    it "ignores trailing pipes with only whitespace after them" do
+      table = parse_single("|data|\n|file|   	", :table, 2)
+      assert_equal(1, table.children[0].children.count)
+      assert_equal(1, table.children[1].children.count)
+    end
+
+    it "ignores escaped pipes" do
+      table = parse_single("|data\\|file", :table, 1)
+      assert_equal(1, table.children[0].children.count)
+      assert_equal("data|file", table.children[0].children[0].children[0].content)
+    end
+
+    it "ignores pipes in verbatim spans" do
+      table = parse_single("|data`|`file", :table, 1)
+      assert_equal(1, table.children[0].children.count)
+      assert_equal(3, table.children[0].children[0].children.count)
+    end
+
+    it "creates an empty table if only separator lines are used" do
+      parse_single("|---", :table, 0, reset: true)
+      parse_single("|---\n|---\n|===", :table, 0, reset: true)
+    end
+
+    it "ignores leading and trailing separator lines" do
+      table = parse_single("|-\n|data", :table, 1, reset: true)
+      assert_nil(table.children[0][:type])
+      table = parse_single("|data\n|-", :table, 1, reset: true)
+      assert_nil(table.children[0][:type])
+      table = parse_single("|-\n|data\n|-", :table, 1, reset: true)
+      assert_nil(table.children[0][:type])
+    end
+
+    it "ignores invalid characters in separator lines" do
+      parse_single("|- this is invalid\n|:--| As is this\n|= And this", :table, 0)
+    end
+
+    it "uses the first separator line as header separator, if at least one content row follows" do
+      ["|data\n|-\n|row2", "|-\n|data\n|-\n|row2", "|-\n|data\n|-\n|row2\n|-"].each do |sample|
+        table = parse_single(sample, :table, 2, reset: true)
+        assert_equal(:header_start, table.children[0][:type])
+        assert_equal(:body_start, table.children[1][:type])
+      end
+    end
+
+    it "uses the first separator line to provide column alignment information" do
+      table = parse_single("|data\n|-|:-|:--:|---:\n|row2", :table, 2)
+      assert_equal(:header_start, table.children[0][:type])
+      assert_equal(:body_start, table.children[1][:type])
+      assert_equal([:default, :left, :center, :right], table[:column_alignments])
+    end
+
+    it "ignores multiple separator lines after another" do
+      table = parse_single("|data\n|-\n|:-\n|row2", :table, 2)
+      assert_equal([:default], table[:column_alignments])
+    end
+
+    it "uses separator lines after the initial ones to create multiple body parts" do
+      table = parse_single("|h1\n|h2\n|-\n|r2\n|-\n|r2\n|r3\n|-\n|r4\n|r5", :table, 7)
+      assert_equal([:header_start, nil, :body_start, :body_start, nil, :body_start, nil],
+                   table.children.map {|row| row[:type]})
+    end
+
+    it "uses a footer separator line" do
+      table = parse_single("|data\n|=\n|footer1\n|footer2", :table, 3)
+      assert_equal(:footer_start, table.children[1][:type])
+    end
+
+    it "ignores any separator line after the first footer separator line" do
+      table = parse_single("|data\n|=\n|footer1\n|-:\n|footer2\n|=", :table, 3)
+      assert_equal([nil, :footer_start, nil], table.children.map {|row| row[:type] })
+    end
+
+    it "ignores an initial table line that is not on a block boundary" do
+      parse_single("paragraph\n|table", :paragraph, 3)
+    end
+  end
+
   describe "parse_inline_simple" do
     it "works for content marked-up with strong" do
       node = parse_single("*home*", :paragraph, 1)
@@ -1213,6 +1299,11 @@ describe VersaDok::Parser do
     it "handles the marker character for inline extensions" do
       node = parse_single("This \\:isnot: a drill", :paragraph, 1)
       assert_equal('This :isnot: a drill', node.children[0].content)
+    end
+
+    it "handles the marker character for table cells" do
+      node = parse_single("This \\| is", :paragraph, 1)
+      assert_equal('This | is', node.children[0].content)
     end
 
     it "replaces an escaped line break with a hard line break element" do

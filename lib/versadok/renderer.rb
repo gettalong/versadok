@@ -103,6 +103,7 @@ module VersaDok
       when :block_extension then render_extension(node)
       when :inline_extension then render_extension(node)
       when :footnote_reference then render_footnote_reference(node)
+      when :table then render_table(node)
       else
         raise "Unsupported node type '#{node.type}'"
       end
@@ -146,6 +147,7 @@ module VersaDok
     alias_method :render_definition_list_item, :render_root #:nodoc:
     alias_method :render_definition_list_item_term, :render_root #:nodoc:
     alias_method :render_definition_list_item_content, :render_root #:nodoc:
+    alias_method :render_table, :render_root #:nodoc:
 
     alias_method :render_code_block, :render_blank #:nodoc:
     alias_method :render_text, :render_blank #:nodoc:

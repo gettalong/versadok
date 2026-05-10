@@ -235,6 +235,106 @@ defines the amount of whitespace removed from each content line:
   ~~~
 
 
+### Table
+
+A line starting with a '|' character starts a table. Each following line that starts with a '|'
+character belongs to the same table. A trailing '|' character, i.e. one only followed by whitespace,
+is ignored and purely visual.
+
+All such lines are rows of the table, with cells separated by '|' characters:
+
+::example:
+  | cell 1,1 | cell 1,2
+  | cell 2,1 | cell 2,2 |
+
+Whitespace is allowed before a table:
+
+::example:
+  This is a paragraph.
+
+      | This is | the first row
+    | Of two | rows here.
+
+The content of a cell is inline markup. If a '|' character is escaped or within a verbatim element,
+it is not a cell separator:
+
+::example:
+  | cell 1 \| continued `|` here | cell 2
+
+A row starting with '|-', '|:-' or '|=' is a separator line. The rest of the line should contain
+only those same characters. If another character is found, it and the rest of the line are ignored.
+
+::example:
+  |-----|-----| This is ignored
+
+The above example results in an empty table as there are no content rows.
+
+The first separator line using '-' after at least one content row makes all rows above part of the
+table header:
+
+::example:
+  | header 1 | header 2
+  |--------------------
+  | cell 1 | cell 2
+
+If such a header separator line contains colons, they can be used to specify the column alignment
+for all rows for each column:
+
+::example:
+  | default | left | center | right |
+  |---------|:-----|:------:|------:|
+  | cell 1  | 2    |   3    |     4
+
+Each cell needs to contain at least one '-' for this to work:
+
+* If no colons are in a cell, the column is default aligned.
+
+* If the cell starts and ends with a colon, the column is center aligned.
+
+* If the cell starts with a colon, the column is left aligned.
+
+* If the cell ends with a colon, the column is right aligned
+
+All following separator lines using '-' split the table body into multiple body parts:
+
+::example:
+  | header 1 | header 2 | header 3
+  |--
+  | row 1,1  | row 1,2 | rows 1,3
+  | row 2,1  | row 2,2 | rows 2,3
+  |--
+  | part 2,1  | part 2,2 | part 2,3
+
+Separator lines that directly follow another separator line are ignored. Additionally, leading
+separator lines (ones not preceeded by at least one content row) and trailing separator lines (ones
+not followed by a content row) are ignored.
+
+There may be one footer separator line using '='. All table rows below the footer separator line are
+part of the table footer.
+
+::example:
+  | row 1,1 | row 1,2 | row 1,3
+  |============================
+  | footer 1,1 | footer 1,2 | footer 1,3
+
+Any separator line after the footer separator line is ignored.
+
+Here is an example showing all of the above:
+
+::example:
+  | header 1 | header 2 | header 3 |
+  |:---------|:--------:|---------:|
+  | cell 1,1 | cell 1,2 | cell 1,3 |
+  |--------------------------------|
+  |----------------------|--|--|---| Duplicate sep line, ignored
+  | part 2,1 | part 2,2 | part 2,3 |
+  |================================|
+  | footer 1 | footer 2 | footer 3 |
+  |--------------------------------| ignored
+  | another  | footer   | row      |
+  |================================| also ignored
+
+
 ### General block
 
 A line starting with three '<' characters and either a space or the end of the line starts a general

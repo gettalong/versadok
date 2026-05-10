@@ -181,6 +181,8 @@ module VersaDok
             close_definition_list(node)
           when :footnote
             @stack[i].children.delete(node)
+          when :table
+            close_table(node)
           end
           i += 1
         end
@@ -298,6 +300,42 @@ module VersaDok
         end
       end
 
+      # Handles assigning the necessary properties to the table parts.
+      def close_table(table)
+        last_row_index = table.children.size - 1
+
+        # Assign row type to the first of each type of rows
+        if table[:last_header_row]
+          if table[:last_header_row] == last_row_index
+            table.properties.delete(:last_header_row)
+          else
+            table.children[0][:type] = :header_start
+            [*table[:last_header_row], *table[:last_body_rows]].each do |index|
+              table.children[index + 1][:type] = :body_start unless index == last_row_index
+            end
+          end
+        end
+        if table[:first_footer_row]
+          table.children[table[:first_footer_row]][:type] = :footer_start
+        end
+
+        # Remove table parsing processing information
+        table.properties.delete(:last_header_row)
+        table.properties.delete(:last_body_rows)
+        table.properties.delete(:first_footer_row)
+        table.properties.delete(:last_row_type)
+
+        # Remove empty trailing cells, i.e. ones only containing whitespace
+        table.children.each do |row|
+          last_cell_children = row.children.last.children
+          if last_cell_children.empty? || (last_cell_children.size == 1 &&
+                                           last_cell_children[0].type == :text &&
+                                           last_cell_children[0].content.strip.empty?)
+            row.children.pop
+          end
+        end
+      end
+
     end
 
     # The parsing context (see Context).
@@ -384,6 +422,8 @@ module VersaDok
         else
           parse_reference_link_definition
         end
+      when 124 # |
+        parse_table
       when 13, 10, nil # \r \n EOS
         byte = @scanner.scan_byte
         @scanner.scan_byte if byte == 13 && @scanner.peek_byte == 10
@@ -595,6 +635,63 @@ module VersaDok
       end
     end
 
+    # Parses the table at the current position.
+    def parse_table
+      level = @stack.node_level(:table)
+      type = if @scanner.match?(/\|(?::?(-)|=)/)
+               (@scanner[1] ? :separator : :footer_separator)
+             else
+               :content
+             end
+
+      if level
+        table = @stack[level]
+        @stack.close_node(level + 1)
+        if (type == :separator || type == :footer_separator) && table[:last_row_type] == :separator
+          # ignore separator lines following another separator line
+          @scanner.skip(/.*?(?:#{EOL_RE_STR})/o)
+          @line_no += 1
+        elsif type == :separator
+          # assign column alignments + header row information, or split body rows
+          table[:last_row_type] = :separator
+          @scanner.scan(/((?:\|:?-+:?)+).*(?:#{EOL_RE_STR})/o)
+          @line_no += 1
+          if table[:first_footer_row]
+            # do nothing because separator lines after a footer separator are ignored
+          elsif table[:last_header_row]
+            (table[:last_body_rows] ||= []) << table.children.size - 1
+          else
+            table[:last_header_row] = table.children.size - 1
+            table[:column_alignments] = @scanner.matched.scan(/(?:(:)?-+(:)?)/).map do |arr|
+              (arr[0] && arr[1] ? :center : (arr[0] ? :left : (arr[1] ? :right : :default)))
+            end
+          end
+        elsif type == :footer_separator
+          table[:last_row_type] = :separator
+          @scanner.skip(/.*?(?:#{EOL_RE_STR})/o)
+          @line_no += 1
+          table[:first_footer_row] = table.children.size unless table[:first_footer_row]
+        else
+          table[:last_row_type] = :content
+          @scanner.scan_byte
+          @stack.append_child(block_node(:row))
+          @stack.append_child(block_node(:cell))
+          parse_continuation_line
+        end
+      elsif !@stack.block_boundary?
+        parse_continuation_line
+      elsif type == :separator || type == :footer_separator
+        @stack.append_child(block_node(:table, properties: {last_row_type: :separator}))
+        @scanner.skip(/.*?(?:#{EOL_RE_STR})/o)
+      else
+        @scanner.scan_byte
+        @stack.append_child(block_node(:table, properties: {last_row_type: :content}))
+        @stack.append_child(block_node(:row))
+        @stack.append_child(block_node(:cell))
+        parse_continuation_line
+      end
+    end
+
     # Parses the lines at the curent position as verbatim, as long as possible.
     #
     # The +indent+ argument specifies the needed indentation of the verbatim lines at the current
@@ -645,9 +742,9 @@ module VersaDok
 
     # The regular expression for matching an inline element.
     INLINE_RE = /(?=
-                   \\[*_~^`\[\]\(\)\{\}\<\>:!\r\n \\] # Match backslash escapes
-                   |[*_~^`\[\]\)\{\}\<\>:!]           # Match inline element start or end
-                   |#{EOL_RE_STR})                    # Match end of line
+                   \\[*_~^`\[\]\(\)\{\}\<\>:!|\r\n \\] # Match backslash escapes
+                   |[*_~^`\[\]\)\{\}\<\>:!|]           # Match inline element start|end or cell divider
+                   |#{EOL_RE_STR})                     # Match end of line
                 /ox
 
     # Maps all whitespace character codes to +true+.
@@ -677,7 +774,8 @@ module VersaDok
     def parse_continuation_line
       if (@stack.block_boundary? ||
           (last_block_node = @stack.last_block_node).type == :block_extension ||
-          last_block_node.type == :code_block || last_block_node.type == :general_block) &&
+          last_block_node.type == :code_block || last_block_node.type == :general_block ||
+          last_block_node.type == :cell) &&
          @stack.container.content_model == :block
         @stack.append_child(block_node(:paragraph))
       end
@@ -741,6 +839,13 @@ module VersaDok
         when 10, 13 # \n \r
           @scanner.scan_byte if byte == 13 && @scanner.peek_byte == 10
           break
+        when 124 # |
+          if (level = @stack.node_level(:cell))
+            @stack.close_node(level)
+            @stack.append_child(block_node(:cell))
+          else
+            add_text('|')
+          end
         end
       end
 
